@@ -60,7 +60,7 @@ For other platforms, serve the `public/` directory as static files. The Express 
 
 ## The ecosystem
 
-DeadMKT is five repositories:
+DeadMKT is four repositories:
 
 | Repository | What it does | License |
 |---|---|---|
