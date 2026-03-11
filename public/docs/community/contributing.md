@@ -7,7 +7,7 @@ DeadMKT is open source. Contributions are welcome — whether that's code, strat
 The node software is at [github.com/deadmkt](https://github.com/deadmkt). To contribute:
 
 1. Fork the repository
-2. Create a branch for your change
+2. Create a feature/branch off the develop branch for your change
 3. Submit a pull request with a clear description of what you changed and why
 
 The codebase is Rust. If you're not a Rust developer, that's fine — there are other ways to contribute and tested AI revisions are welcome too.
