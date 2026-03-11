@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>DeadMKT — Fair Markets, Built by Individuals</title>
+  <meta name="description" content="A peer-to-peer electronic communication network where AI works for you. Run a node. Write a strategy. Trade as an equal.">
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #050508;
+      --bg-card: #0a0a10;
+      --border: #151520;
+      --text: #d4d4dc;
+      --text-dim: #6a6a7a;
+      --text-faint: #3a3a4a;
+      --green: #22c55e;
+      --green-glow: rgba(34, 197, 94, 0.06);
+      --accent: #6366f1;
+      --mono: 'JetBrains Mono', monospace;
+      --sans: 'DM Sans', -apple-system, sans-serif;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--sans);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* Grain overlay */
+    body::after {
+      content: '';
+      position: fixed;
+      inset: 0;
+      opacity: 0.015;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+      pointer-events: none;
+      z-index: 100;
+    }
+
+    .page {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      padding: 60px 32px;
+      max-width: 720px;
+      margin: 0 auto;
+    }
+
+    /* Logo */
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      margin-bottom: 64px;
+      opacity: 0;
+      animation: fadeIn 0.8s ease forwards;
+    }
+
+    .logo-mark {
+      width: 40px;
+      height: 40px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: var(--mono);
+      font-weight: 600;
+      font-size: 18px;
+      color: var(--green);
+      background: var(--bg-card);
+    }
+
+    .logo-name {
+      font-family: var(--mono);
+      font-size: 14px;
+      font-weight: 500;
+      letter-spacing: 0.1em;
+      color: var(--text-dim);
+    }
+
+    .logo-name strong {
+      color: var(--text);
+      font-weight: 600;
+    }
+
+    /* Hero */
+    .hero {
+      text-align: center;
+      margin-bottom: 56px;
+    }
+
+    .hero-provocation {
+      font-family: var(--mono);
+      font-size: 13px;
+      font-weight: 400;
+      color: var(--green);
+      letter-spacing: 0.04em;
+      margin-bottom: 28px;
+      opacity: 0;
+      animation: fadeIn 0.8s ease 0.2s forwards;
+    }
+
+    .hero-title {
+      font-family: var(--sans);
+      font-size: clamp(28px, 5vw, 42px);
+      font-weight: 700;
+      line-height: 1.2;
+      color: var(--text);
+      margin-bottom: 24px;
+      opacity: 0;
+      animation: fadeIn 0.8s ease 0.35s forwards;
+    }
+
+    .hero-sub {
+      font-size: 16px;
+      line-height: 1.7;
+      color: var(--text-dim);
+      max-width: 540px;
+      margin: 0 auto;
+      opacity: 0;
+      animation: fadeIn 0.8s ease 0.5s forwards;
+    }
+
+    /* Spark — the AI empowerment message */
+    .spark {
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 32px 36px;
+      margin-bottom: 56px;
+      background: var(--bg-card);
+      position: relative;
+      overflow: hidden;
+      opacity: 0;
+      animation: fadeIn 0.8s ease 0.65s forwards;
+    }
+
+    .spark::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, var(--green), transparent);
+      opacity: 0.3;
+    }
+
+    .spark-line {
+      font-size: 15px;
+      line-height: 1.8;
+      color: var(--text-dim);
+      margin-bottom: 16px;
+    }
+
+    .spark-line:last-child {
+      margin-bottom: 0;
+    }
+
+    .spark-line em {
+      color: var(--text);
+      font-style: normal;
+      font-weight: 500;
+    }
+
+    .spark-line .highlight {
+      color: var(--green);
+      font-family: var(--mono);
+      font-size: 13px;
+      font-weight: 500;
+    }
+
+    /* CTAs */
+    .ctas {
+      display: flex;
+      gap: 16px;
+      margin-bottom: 80px;
+      opacity: 0;
+      animation: fadeIn 0.8s ease 0.8s forwards;
+    }
+
+    .cta {
+      display: inline-block;
+      padding: 12px 28px;
+      border-radius: 8px;
+      font-family: var(--sans);
+      font-weight: 600;
+      font-size: 14px;
+      text-decoration: none;
+      transition: all 0.15s;
+    }
+
+    .cta-primary {
+      background: var(--green);
+      color: #050508;
+    }
+
+    .cta-primary:hover {
+      background: #16a34a;
+    }
+
+    .cta-secondary {
+      background: transparent;
+      color: var(--text-dim);
+      border: 1px solid var(--border);
+    }
+
+    .cta-secondary:hover {
+      border-color: var(--text-dim);
+      color: var(--text);
+    }
+
+    /* Principles strip */
+    .principles {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1px;
+      background: var(--border);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      overflow: hidden;
+      width: 100%;
+      max-width: 640px;
+      opacity: 0;
+      animation: fadeIn 0.8s ease 0.95s forwards;
+    }
+
+    .principle {
+      background: var(--bg-card);
+      padding: 24px 20px;
+      text-align: center;
+    }
+
+    .principle-icon {
+      font-family: var(--mono);
+      font-size: 18px;
+      color: var(--green);
+      margin-bottom: 10px;
+    }
+
+    .principle-text {
+      font-family: var(--mono);
+      font-size: 11px;
+      color: var(--text-dim);
+      letter-spacing: 0.04em;
+      line-height: 1.5;
+    }
+
+    /* Footer */
+    .footer {
+      padding: 24px 32px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-top: 1px solid var(--border);
+      max-width: 720px;
+      margin: 0 auto;
+      width: 100%;
+    }
+
+    .footer-left {
+      font-family: var(--mono);
+      font-size: 11px;
+      color: var(--text-faint);
+    }
+
+    .footer-links {
+      display: flex;
+      gap: 20px;
+    }
+
+    .footer-links a {
+      font-family: var(--mono);
+      font-size: 11px;
+      color: var(--text-dim);
+      text-decoration: none;
+      transition: color 0.15s;
+    }
+
+    .footer-links a:hover {
+      color: var(--text);
+    }
+
+    /* Animation */
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Mobile */
+    @media (max-width: 600px) {
+      .page { padding: 40px 20px; }
+      .principles { grid-template-columns: 1fr; }
+      .ctas { flex-direction: column; align-items: center; }
+      .cta { width: 100%; text-align: center; }
+      .spark { padding: 24px 20px; }
+      .footer { flex-direction: column; gap: 12px; text-align: center; }
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+
+    <div class="logo">
+      <div class="logo-mark">D</div>
+      <div class="logo-name"><strong>DEAD</strong>MKT &nbsp;<-Dead Market Theory</div>
+    </div>
+
+    <div class="hero">
+      <div class="hero-provocation">What's your end game?</div>
+      <h1 class="hero-title">Fair markets, built by individuals.</h1>
+      <p class="hero-sub">
+        A peer-to-peer trading network with no broker, no counterparty, and no hidden extraction.
+        Every order is signed. Every settlement is on-chain. Every price is math, not opinion.
+      </p>
+    </div>
+
+    <div class="spark">
+      <p class="spark-line">
+        In a future where AI reshapes every industry, the question isn't whether the world changes.
+        <em>It's whether you're on the right side of that change.</em>
+      </p>
+      <p class="spark-line">
+        Our end game is a safe and fair market we can all be a part of.
+        <em>Your AI is always in control</em> — with the tools and the strategy, working for your benefit.
+      </p>
+      <p class="spark-line">
+        Run a node. Write a strategy. Let your AI trade for you on infrastructure
+        that <em>can't</em> trade against you.
+        <span class="highlight">That's the end game.</span>
+      </p>
+    </div>
+
+    <div class="ctas">
+      <a href="/docs/#/manifesto" class="cta cta-secondary">Read the Manifesto</a>
+      <a href="/docs/#/guides/run-a-node" class="cta cta-primary">Run a Node</a>
+    </div>
+
+    <div class="principles">
+      <div class="principle">
+        <div class="principle-icon">◈</div>
+        <div class="principle-text">No broker.<br>Peer-to-peer.</div>
+      </div>
+      <div class="principle">
+        <div class="principle-icon">◇</div>
+        <div class="principle-text">Price is math.<br>Not opinion.</div>
+      </div>
+      <div class="principle">
+        <div class="principle-icon">△</div>
+        <div class="principle-text">Your node.<br>Your keys.</div>
+      </div>
+    </div>
+
+  </div>
+
+  <footer class="footer">
+    <div class="footer-left">alpha testnet</div>
+    <div class="footer-links">
+      <a href="/docs/">docs</a>
+      <a href="https://github.com/deadmkt" target="_blank" rel="noopener">github</a>
+      <a href="https://x.com/DeadMKT" target="_blank" rel="noopener">𝕏</a>
+    </div>
+  </footer>
+</body>
+</html>

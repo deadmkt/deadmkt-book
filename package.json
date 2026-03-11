@@ -1,0 +1,17 @@
+{
+  "name": "deadmkt-book",
+  "version": "1.0.0",
+  "description": "DeadMKT documentation and landing page",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js"
+  },
+  "license": "AGPL-3.0",
+  "dependencies": {
+    "express": "^4.18.2"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
