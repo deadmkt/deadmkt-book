@@ -1,0 +1,734 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>DeadMKT — Live Trades</title>
+  <meta name="description" content="Live trade feed from the DeadMKT peer-to-peer trading network.">
+  <link rel="icon" type="image/svg+xml" href="https://deadmkt.com/favicon.svg">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+  <style>
+    :root {
+      --bg: #050508;
+      --bg-card: #0a0a10;
+      --bg-row: #08080e;
+      --bg-row-alt: #0b0b14;
+      --border: #151520;
+      --text: #d4d4dc;
+      --text-dim: #6a6a7a;
+      --text-faint: #3a3a4a;
+      --green: #22c55e;
+      --red: #ef4444;
+      --green-glow: rgba(34, 197, 94, 0.06);
+      --accent: #6366f1;
+      --mono: 'JetBrains Mono', monospace;
+      --sans: 'DM Sans', -apple-system, sans-serif;
+      --emm-kay: #818cf8;
+      --kay-tee: #22d3ee;
+      --tee-emm: #facc15;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--sans);
+      min-height: 100vh;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    body::after {
+      content: '';
+      position: fixed;
+      inset: 0;
+      opacity: 0.015;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+      pointer-events: none;
+      z-index: 100;
+    }
+
+    .page { max-width: 1100px; margin: 0 auto; padding: 2rem 1.5rem; }
+
+    .header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 2rem;
+      padding-bottom: 1rem;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .header h1 {
+      font-family: var(--mono);
+      font-size: 1.1rem;
+      font-weight: 500;
+      color: var(--text);
+      letter-spacing: -0.02em;
+    }
+
+    .header h1 span { color: var(--green); }
+
+    .header-links {
+      display: flex;
+      gap: 1.2rem;
+      font-size: 0.8rem;
+    }
+
+    .header-links a {
+      color: var(--text-dim);
+      text-decoration: none;
+      font-family: var(--mono);
+      transition: color 0.2s;
+    }
+
+    .header-links a:hover { color: var(--text); }
+
+    .status-bar {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      margin-bottom: 2rem;
+      font-family: var(--mono);
+      font-size: 0.75rem;
+      color: var(--text-dim);
+    }
+
+    .status-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--text-faint);
+      transition: background 0.3s;
+    }
+
+    .status-dot.live { background: var(--green); box-shadow: 0 0 6px var(--green); }
+    .status-dot.error { background: var(--red); }
+
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      gap: 1px;
+      background: var(--border);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      overflow: hidden;
+      margin-bottom: 2rem;
+    }
+
+    .stat {
+      background: var(--bg-card);
+      padding: 1rem 1.2rem;
+    }
+
+    .stat-label {
+      font-family: var(--mono);
+      font-size: 0.65rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--text-faint);
+      margin-bottom: 0.4rem;
+    }
+
+    .stat-value {
+      font-family: var(--mono);
+      font-size: 1.3rem;
+      font-weight: 500;
+      color: var(--text);
+    }
+
+    .stat-value.green { color: var(--green); }
+
+    /* Chart */
+    .chart-container {
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      background: var(--bg-card);
+      padding: 1.2rem;
+      margin-bottom: 2rem;
+    }
+
+    .chart-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 0.8rem;
+    }
+
+    .chart-header h2 {
+      font-family: var(--mono);
+      font-size: 0.8rem;
+      font-weight: 500;
+      color: var(--text-dim);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
+
+    .chart-legend {
+      display: flex;
+      gap: 1rem;
+      font-family: var(--mono);
+      font-size: 0.7rem;
+    }
+
+    .chart-legend-item {
+      display: flex;
+      align-items: center;
+      gap: 0.35rem;
+      color: var(--text-dim);
+    }
+
+    .chart-legend-dot {
+      width: 8px;
+      height: 3px;
+      border-radius: 1px;
+    }
+
+    .chart-wrap {
+      position: relative;
+      height: 220px;
+    }
+
+    .filter-bar {
+      display: flex;
+      gap: 0.5rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .filter-btn {
+      font-family: var(--mono);
+      font-size: 0.72rem;
+      padding: 0.35rem 0.8rem;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      background: var(--bg-card);
+      color: var(--text-dim);
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .filter-btn:hover { border-color: var(--text-faint); color: var(--text); }
+    .filter-btn.active { border-color: var(--green); color: var(--green); background: var(--green-glow); }
+
+    .trades-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 0.8rem;
+    }
+
+    .trades-header h2 {
+      font-family: var(--mono);
+      font-size: 0.8rem;
+      font-weight: 500;
+      color: var(--text-dim);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
+
+    .trades-header .count {
+      font-family: var(--mono);
+      font-size: 0.7rem;
+      color: var(--text-faint);
+    }
+
+    .trade-table {
+      width: 100%;
+      border-collapse: collapse;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      overflow: hidden;
+    }
+
+    .trade-table th {
+      font-family: var(--mono);
+      font-size: 0.65rem;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--text-faint);
+      text-align: left;
+      padding: 0.6rem 0.8rem;
+      background: var(--bg-card);
+      border-bottom: 1px solid var(--border);
+    }
+
+    .trade-table td {
+      font-family: var(--mono);
+      font-size: 0.78rem;
+      padding: 0.55rem 0.8rem;
+      border-bottom: 1px solid var(--border);
+      color: var(--text-dim);
+    }
+
+    .trade-table tr:nth-child(even) td { background: var(--bg-row-alt); }
+    .trade-table tr:nth-child(odd) td { background: var(--bg-row); }
+    .trade-table tr:hover td { background: var(--bg-card); }
+    .trade-table tr.new-trade td { animation: flash 1.5s ease-out; }
+
+    @keyframes flash {
+      0% { background: rgba(34, 197, 94, 0.12); }
+      100% { background: transparent; }
+    }
+
+    .pair-tag {
+      display: inline-block;
+      padding: 0.15rem 0.4rem;
+      border-radius: 3px;
+      font-size: 0.7rem;
+      font-weight: 500;
+      border: 1px solid var(--border);
+    }
+
+    .pair-tag.emm-kay { border-color: #4f46e5; color: var(--emm-kay); }
+    .pair-tag.kay-tee { border-color: #0891b2; color: var(--kay-tee); }
+    .pair-tag.tee-emm { border-color: #ca8a04; color: var(--tee-emm); }
+
+    .price-cell { color: var(--text); font-weight: 500; }
+    .buy-cell { color: var(--green); }
+    .sell-cell { color: var(--red); }
+
+    .tx-link {
+      color: var(--text-faint);
+      text-decoration: none;
+      font-size: 0.7rem;
+      transition: color 0.2s;
+    }
+
+    .tx-link:hover { color: var(--accent); }
+    .time-cell { color: var(--text-faint); font-size: 0.7rem; }
+
+    .empty {
+      text-align: center;
+      padding: 3rem;
+      color: var(--text-faint);
+      font-family: var(--mono);
+      font-size: 0.85rem;
+    }
+
+    .waiting { display: inline-block; animation: pulse 2s ease-in-out infinite; }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 0.4; }
+      50% { opacity: 1; }
+    }
+
+    .footer {
+      margin-top: 3rem;
+      padding-top: 1rem;
+      border-top: 1px solid var(--border);
+      font-family: var(--mono);
+      font-size: 0.7rem;
+      color: var(--text-faint);
+      display: flex;
+      justify-content: space-between;
+    }
+
+    .footer a { color: var(--text-dim); text-decoration: none; }
+    .footer a:hover { color: var(--text); }
+
+    @media (max-width: 700px) {
+      .trade-table th:nth-child(5),
+      .trade-table td:nth-child(5),
+      .trade-table th:nth-child(6),
+      .trade-table td:nth-child(6) { display: none; }
+      .stats { grid-template-columns: repeat(2, 1fr); }
+      .chart-wrap { height: 160px; }
+      .chart-legend { gap: 0.5rem; font-size: 0.6rem; }
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+
+    <div class="header">
+      <h1>dead<span>MKT</span> // live</h1>
+      <div class="header-links">
+        <a href="https://deadmkt.com">home</a>
+        <a href="https://deadmkt.com/docs/">docs</a>
+        <a href="https://github.com/deadmkt">github</a>
+      </div>
+    </div>
+
+    <div class="status-bar">
+      <div class="status-dot" id="statusDot"></div>
+      <span id="statusText">connecting...</span>
+    </div>
+
+    <div class="stats">
+      <div class="stat">
+        <div class="stat-label">Trades</div>
+        <div class="stat-value" id="totalTrades">--</div>
+      </div>
+      <div class="stat">
+        <div class="stat-label">Volume</div>
+        <div class="stat-value" id="totalVolume">--</div>
+      </div>
+      <div class="stat">
+        <div class="stat-label">Trustees</div>
+        <div class="stat-value green" id="totalTrustees">--</div>
+      </div>
+      <div class="stat">
+        <div class="stat-label">Mints</div>
+        <div class="stat-value" id="totalMints">--</div>
+      </div>
+      <div class="stat">
+        <div class="stat-label">Burns</div>
+        <div class="stat-value" id="totalBurns">--</div>
+      </div>
+      <div class="stat">
+        <div class="stat-label">Last Block</div>
+        <div class="stat-value" id="lastBlock">--</div>
+      </div>
+    </div>
+
+    <div class="chart-container">
+      <div class="chart-header">
+        <h2>Clearing Prices</h2>
+        <div class="chart-legend">
+          <div class="chart-legend-item">
+            <div class="chart-legend-dot" style="background: var(--emm-kay)"></div>
+            EMM/KAY
+          </div>
+          <div class="chart-legend-item">
+            <div class="chart-legend-dot" style="background: var(--kay-tee)"></div>
+            KAY/TEE
+          </div>
+          <div class="chart-legend-item">
+            <div class="chart-legend-dot" style="background: var(--tee-emm)"></div>
+            TEE/EMM
+          </div>
+        </div>
+      </div>
+      <div class="chart-wrap">
+        <canvas id="priceChart"></canvas>
+      </div>
+    </div>
+
+    <div class="filter-bar">
+      <button class="filter-btn active" data-pair="all">All pairs</button>
+      <button class="filter-btn" data-pair="EMM/KAY">EMM/KAY</button>
+      <button class="filter-btn" data-pair="KAY/TEE">KAY/TEE</button>
+      <button class="filter-btn" data-pair="TEE/EMM">TEE/EMM</button>
+    </div>
+
+    <div class="trades-header">
+      <h2>Recent Trades</h2>
+      <span class="count" id="tradeCount"></span>
+    </div>
+
+    <table class="trade-table">
+      <thead>
+        <tr>
+          <th>Time</th>
+          <th>Pair</th>
+          <th>Price</th>
+          <th>Quantity</th>
+          <th>Buyer</th>
+          <th>Seller</th>
+          <th>Tx</th>
+        </tr>
+      </thead>
+      <tbody id="tradeBody">
+        <tr><td colspan="7" class="empty"><span class="waiting">waiting for trades...</span></td></tr>
+      </tbody>
+    </table>
+
+    <div class="footer">
+      <span>DeadMKT Testnet</span>
+      <span>Refreshes every 5s</span>
+      <a href="https://deadmkt.com/docs/#/guides/run-a-node">Run a node</a>
+    </div>
+
+  </div>
+
+  <script>
+    const API = 'https://idx-testnet.deadmkt.com/api';
+    const POLL = 5000;
+    const DEC = 5;
+    const PDEC = 8;
+    const MAX_CHART_POINTS = 100;
+
+    let pair = 'all';
+    let prevFirst = null;
+    let chart = null;
+
+    // Chart data per pair
+    var chartData = {
+      'EMM/KAY': { times: [], prices: [] },
+      'KAY/TEE': { times: [], prices: [] },
+      'TEE/EMM': { times: [], prices: [] },
+    };
+
+    // ── Chart setup ────────────────────────────────────────────────
+    function initChart() {
+      var ctx = document.getElementById('priceChart').getContext('2d');
+      chart = new Chart(ctx, {
+        type: 'line',
+        data: {
+          datasets: [
+            {
+              label: 'EMM/KAY',
+              data: [],
+              borderColor: '#818cf8',
+              backgroundColor: 'rgba(129, 140, 248, 0.05)',
+              borderWidth: 1.5,
+              pointRadius: 0,
+              pointHoverRadius: 3,
+              tension: 0.3,
+              fill: true,
+            },
+            {
+              label: 'KAY/TEE',
+              data: [],
+              borderColor: '#22d3ee',
+              backgroundColor: 'rgba(34, 211, 238, 0.05)',
+              borderWidth: 1.5,
+              pointRadius: 0,
+              pointHoverRadius: 3,
+              tension: 0.3,
+              fill: true,
+            },
+            {
+              label: 'TEE/EMM',
+              data: [],
+              borderColor: '#facc15',
+              backgroundColor: 'rgba(250, 204, 21, 0.05)',
+              borderWidth: 1.5,
+              pointRadius: 0,
+              pointHoverRadius: 3,
+              tension: 0.3,
+              fill: true,
+            },
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          animation: { duration: 300 },
+          interaction: {
+            mode: 'index',
+            intersect: false,
+          },
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              backgroundColor: '#0a0a10',
+              borderColor: '#151520',
+              borderWidth: 1,
+              titleFont: { family: "'JetBrains Mono', monospace", size: 11 },
+              bodyFont: { family: "'JetBrains Mono', monospace", size: 11 },
+              titleColor: '#6a6a7a',
+              bodyColor: '#d4d4dc',
+              padding: 8,
+              displayColors: true,
+              boxWidth: 8,
+              boxHeight: 3,
+              callbacks: {
+                label: function(ctx) {
+                  return ctx.dataset.label + ': ' + ctx.parsed.y.toFixed(8);
+                }
+              }
+            },
+          },
+          scales: {
+            x: {
+              type: 'category',
+              ticks: {
+                font: { family: "'JetBrains Mono', monospace", size: 9 },
+                color: '#3a3a4a',
+                maxTicksLimit: 8,
+                maxRotation: 0,
+              },
+              grid: { color: 'rgba(21, 21, 32, 0.8)', lineWidth: 0.5 },
+              border: { color: '#151520' },
+            },
+            y: {
+              ticks: {
+                font: { family: "'JetBrains Mono', monospace", size: 9 },
+                color: '#3a3a4a',
+                callback: function(v) { return v.toFixed(4); },
+              },
+              grid: { color: 'rgba(21, 21, 32, 0.8)', lineWidth: 0.5 },
+              border: { color: '#151520' },
+            }
+          }
+        }
+      });
+    }
+
+    function updateChart(trades) {
+      if (!trades || !trades.length) return;
+
+      // Reset chart data
+      chartData = {
+        'EMM/KAY': { times: [], prices: [] },
+        'KAY/TEE': { times: [], prices: [] },
+        'TEE/EMM': { times: [], prices: [] },
+      };
+
+      // Trades come newest first — reverse for chronological chart
+      var sorted = trades.slice().reverse();
+
+      // Build time-series per pair
+      var allTimes = [];
+      for (var i = 0; i < sorted.length; i++) {
+        var t = sorted[i];
+        var time = fmtTime(t.timestamp);
+        var price = Number(t.clearing_price) / Math.pow(10, PDEC);
+        var sym = t.symbol;
+
+        if (chartData[sym]) {
+          chartData[sym].times.push(time);
+          chartData[sym].prices.push(price);
+        }
+        if (allTimes.indexOf(time) === -1) allTimes.push(time);
+      }
+
+      // Use unified time axis — fill gaps with null for each pair
+      var datasets = ['EMM/KAY', 'KAY/TEE', 'TEE/EMM'];
+      var pairIndices = {};
+      for (var d = 0; d < datasets.length; d++) {
+        pairIndices[datasets[d]] = 0;
+      }
+
+      var emmData = [], kayData = [], teeData = [];
+      var dataArrays = [emmData, kayData, teeData];
+
+      for (var ti = 0; ti < allTimes.length; ti++) {
+        var time = allTimes[ti];
+        for (var d = 0; d < datasets.length; d++) {
+          var sym = datasets[d];
+          var cd = chartData[sym];
+          var idx = pairIndices[sym];
+          if (idx < cd.times.length && cd.times[idx] === time) {
+            dataArrays[d].push(cd.prices[idx]);
+            pairIndices[sym]++;
+          } else {
+            dataArrays[d].push(null);
+          }
+        }
+      }
+
+      // Trim to MAX_CHART_POINTS
+      if (allTimes.length > MAX_CHART_POINTS) {
+        var trim = allTimes.length - MAX_CHART_POINTS;
+        allTimes = allTimes.slice(trim);
+        for (var d = 0; d < dataArrays.length; d++) {
+          dataArrays[d] = dataArrays[d].slice(trim);
+        }
+      }
+
+      chart.data.labels = allTimes;
+      chart.data.datasets[0].data = emmData;
+      chart.data.datasets[1].data = kayData;
+      chart.data.datasets[2].data = teeData;
+      chart.update('none');
+    }
+
+    // ── Formatting ─────────────────────────────────────────────────
+    function fmt(raw, d) { return raw != null ? (Number(raw) / Math.pow(10, d)).toFixed(d) : '--'; }
+
+    function fmtVol(raw) {
+      if (raw == null) return '--';
+      var v = Number(raw) / 1e5;
+      return v >= 1e6 ? (v/1e6).toFixed(1)+'M' : v >= 1e3 ? (v/1e3).toFixed(1)+'K' : v.toFixed(2);
+    }
+
+    function fmtTime(ts) {
+      if (!ts) return '--';
+      return new Date(Number(ts) * 1000).toLocaleTimeString('en-US', {hour12:false, hour:'2-digit', minute:'2-digit', second:'2-digit'});
+    }
+
+    function shortTx(h) {
+      if (!h) return '--';
+      var c = h.startsWith('0x') ? h.slice(2) : h;
+      return c.slice(0,8) + '..';
+    }
+
+    function pc(s) {
+      return s === 'EMM/KAY' ? 'emm-kay' : s === 'KAY/TEE' ? 'kay-tee' : s === 'TEE/EMM' ? 'tee-emm' : '';
+    }
+
+    function setStatus(s, t) {
+      document.getElementById('statusDot').className = 'status-dot ' + s;
+      document.getElementById('statusText').textContent = t;
+    }
+
+    // ── Poll ───────────────────────────────────────────────────────
+    async function poll() {
+      try {
+        var [sr, tr] = await Promise.all([
+          fetch(API + '/stats'),
+          fetch(API + '/trades?limit=200')
+        ]);
+        if (!sr.ok || !tr.ok) throw new Error('api');
+        var stats = await sr.json();
+        var allData = await tr.json();
+        var allTrades = allData.trades || [];
+
+        document.getElementById('totalTrades').textContent = stats.total_trades || 0;
+        document.getElementById('totalVolume').textContent = fmtVol(stats.total_volume);
+        document.getElementById('totalTrustees').textContent = stats.total_trustees || 0;
+        document.getElementById('totalMints').textContent = stats.total_mints || 0;
+        document.getElementById('totalBurns').textContent = stats.total_burns || 0;
+        document.getElementById('lastBlock').textContent = stats.last_indexed_block || '--';
+
+        // Update chart with all trades (unfiltered)
+        updateChart(allTrades);
+
+        // Filter for table display
+        var trades = pair === 'all' ? allTrades : allTrades.filter(function(t) { return t.symbol === pair; });
+        trades = trades.slice(0, 50);
+
+        document.getElementById('tradeCount').textContent = trades.length + ' shown';
+
+        var tbody = document.getElementById('tradeBody');
+        if (!trades.length) {
+          tbody.innerHTML = '<tr><td colspan="7" class="empty"><span class="waiting">waiting for trades...</span></td></tr>';
+        } else {
+          var newFirst = trades[0].trade_id;
+          var hasNew = prevFirst && newFirst !== prevFirst;
+          var html = '';
+          for (var i = 0; i < trades.length; i++) {
+            var t = trades[i];
+            var flash = hasNew && i === 0;
+            html += '<tr' + (flash ? ' class="new-trade"' : '') + '>';
+            html += '<td class="time-cell">' + fmtTime(t.timestamp) + '</td>';
+            html += '<td><span class="pair-tag ' + pc(t.symbol) + '">' + (t.symbol||'--') + '</span></td>';
+            html += '<td class="price-cell">' + fmt(t.clearing_price, PDEC) + '</td>';
+            html += '<td>' + fmt(t.base_amount, DEC) + '</td>';
+            html += '<td class="buy-cell">#' + t.buyer_nft_id + '</td>';
+            html += '<td class="sell-cell">#' + t.seller_nft_id + '</td>';
+            html += '<td><a class="tx-link" href="https://testnet.suprascan.io/tx/' + (t.tx_hash||'') + '" target="_blank" rel="noopener">' + shortTx(t.tx_hash) + '</a></td>';
+            html += '</tr>';
+          }
+          tbody.innerHTML = html;
+          prevFirst = newFirst;
+        }
+        setStatus('live', 'indexer connected');
+      } catch(e) {
+        setStatus('error', 'indexer offline');
+      }
+    }
+
+    // ── Filter buttons ─────────────────────────────────────────────
+    document.querySelectorAll('.filter-btn').forEach(function(btn) {
+      btn.addEventListener('click', function() {
+        document.querySelectorAll('.filter-btn').forEach(function(b) { b.classList.remove('active'); });
+        btn.classList.add('active');
+        pair = btn.dataset.pair;
+        prevFirst = null;
+        poll();
+      });
+    });
+
+    // ── Init ───────────────────────────────────────────────────────
+    initChart();
+    poll();
+    setInterval(poll, POLL);
+  </script>
+</body>
+</html>
