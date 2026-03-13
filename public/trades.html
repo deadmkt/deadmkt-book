@@ -449,18 +449,12 @@
     const POLL = 5000;
     const DEC = 5;
     const PDEC = 8;
+    const PRICE_DISPLAY = 5;
     const MAX_CHART_POINTS = 100;
 
     let pair = 'all';
     let prevFirst = null;
     let chart = null;
-
-    // Chart data per pair
-    var chartData = {
-      'EMM/KAY': { times: [], prices: [] },
-      'KAY/TEE': { times: [], prices: [] },
-      'TEE/EMM': { times: [], prices: [] },
-    };
 
     // ── Chart setup ────────────────────────────────────────────────
     function initChart() {
@@ -479,6 +473,7 @@
               pointHoverRadius: 3,
               tension: 0.3,
               fill: true,
+              spanGaps: true,
             },
             {
               label: 'KAY/TEE',
@@ -490,6 +485,7 @@
               pointHoverRadius: 3,
               tension: 0.3,
               fill: true,
+              spanGaps: true,
             },
             {
               label: 'TEE/EMM',
@@ -501,6 +497,7 @@
               pointHoverRadius: 3,
               tension: 0.3,
               fill: true,
+              spanGaps: true,
             },
           ]
         },
@@ -528,7 +525,7 @@
               boxHeight: 3,
               callbacks: {
                 label: function(ctx) {
-                  return ctx.dataset.label + ': ' + ctx.parsed.y.toFixed(8);
+                  return ctx.dataset.label + ': ' + ctx.parsed.y.toFixed(PRICE_DISPLAY);
                 }
               }
             },
@@ -536,20 +533,13 @@
           scales: {
             x: {
               type: 'category',
-              ticks: {
-                font: { family: "'JetBrains Mono', monospace", size: 9 },
-                color: '#3a3a4a',
-                maxTicksLimit: 8,
-                maxRotation: 0,
-              },
-              grid: { color: 'rgba(21, 21, 32, 0.8)', lineWidth: 0.5 },
-              border: { color: '#151520' },
+              display: false,
             },
             y: {
               ticks: {
                 font: { family: "'JetBrains Mono', monospace", size: 9 },
                 color: '#3a3a4a',
-                callback: function(v) { return v.toFixed(4); },
+                callback: function(v) { return v.toFixed(PRICE_DISPLAY); },
               },
               grid: { color: 'rgba(21, 21, 32, 0.8)', lineWidth: 0.5 },
               border: { color: '#151520' },
@@ -562,74 +552,50 @@
     function updateChart(trades) {
       if (!trades || !trades.length) return;
 
-      // Reset chart data
-      chartData = {
-        'EMM/KAY': { times: [], prices: [] },
-        'KAY/TEE': { times: [], prices: [] },
-        'TEE/EMM': { times: [], prices: [] },
-      };
-
-      // Trades come newest first — reverse for chronological chart
+      // Trades come newest first — reverse for chronological
       var sorted = trades.slice().reverse();
 
-      // Build time-series per pair
-      var allTimes = [];
+      // Separate array per pair
+      var emmPrices = [];
+      var kayPrices = [];
+      var teePrices = [];
+
       for (var i = 0; i < sorted.length; i++) {
         var t = sorted[i];
-        var time = fmtTime(t.timestamp);
         var price = Number(t.clearing_price) / Math.pow(10, PDEC);
         var sym = t.symbol;
 
-        if (chartData[sym]) {
-          chartData[sym].times.push(time);
-          chartData[sym].prices.push(price);
-        }
-        if (allTimes.indexOf(time) === -1) allTimes.push(time);
+        if (sym === 'EMM/KAY') emmPrices.push(price);
+        else if (sym === 'KAY/TEE') kayPrices.push(price);
+        else if (sym === 'TEE/EMM') teePrices.push(price);
       }
 
-      // Use unified time axis — fill gaps with null for each pair
-      var datasets = ['EMM/KAY', 'KAY/TEE', 'TEE/EMM'];
-      var pairIndices = {};
-      for (var d = 0; d < datasets.length; d++) {
-        pairIndices[datasets[d]] = 0;
-      }
+      // Use longest series for x-axis labels
+      var maxLen = Math.max(emmPrices.length, kayPrices.length, teePrices.length);
+      if (maxLen > MAX_CHART_POINTS) maxLen = MAX_CHART_POINTS;
 
-      var emmData = [], kayData = [], teeData = [];
-      var dataArrays = [emmData, kayData, teeData];
+      // Trim to most recent points
+      emmPrices = emmPrices.slice(-maxLen);
+      kayPrices = kayPrices.slice(-maxLen);
+      teePrices = teePrices.slice(-maxLen);
 
-      for (var ti = 0; ti < allTimes.length; ti++) {
-        var time = allTimes[ti];
-        for (var d = 0; d < datasets.length; d++) {
-          var sym = datasets[d];
-          var cd = chartData[sym];
-          var idx = pairIndices[sym];
-          if (idx < cd.times.length && cd.times[idx] === time) {
-            dataArrays[d].push(cd.prices[idx]);
-            pairIndices[sym]++;
-          } else {
-            dataArrays[d].push(null);
-          }
-        }
-      }
+      // Pad shorter arrays at the front with null
+      while (emmPrices.length < maxLen) emmPrices.unshift(null);
+      while (kayPrices.length < maxLen) kayPrices.unshift(null);
+      while (teePrices.length < maxLen) teePrices.unshift(null);
 
-      // Trim to MAX_CHART_POINTS
-      if (allTimes.length > MAX_CHART_POINTS) {
-        var trim = allTimes.length - MAX_CHART_POINTS;
-        allTimes = allTimes.slice(trim);
-        for (var d = 0; d < dataArrays.length; d++) {
-          dataArrays[d] = dataArrays[d].slice(trim);
-        }
-      }
+      var labels = [];
+      for (var i = 0; i < maxLen; i++) labels.push('');
 
-      chart.data.labels = allTimes;
-      chart.data.datasets[0].data = emmData;
-      chart.data.datasets[1].data = kayData;
-      chart.data.datasets[2].data = teeData;
+      chart.data.labels = labels;
+      chart.data.datasets[0].data = emmPrices;
+      chart.data.datasets[1].data = kayPrices;
+      chart.data.datasets[2].data = teePrices;
       chart.update('none');
     }
 
     // ── Formatting ─────────────────────────────────────────────────
-    function fmt(raw, d) { return raw != null ? (Number(raw) / Math.pow(10, d)).toFixed(d) : '--'; }
+    function fmt(raw, d, display) { return raw != null ? (Number(raw) / Math.pow(10, d)).toFixed(display != null ? display : d) : '--'; }
 
     function fmtVol(raw) {
       if (raw == null) return '--';
@@ -698,7 +664,7 @@
             html += '<tr' + (flash ? ' class="new-trade"' : '') + '>';
             html += '<td class="time-cell">' + fmtTime(t.timestamp) + '</td>';
             html += '<td><span class="pair-tag ' + pc(t.symbol) + '">' + (t.symbol||'--') + '</span></td>';
-            html += '<td class="price-cell">' + fmt(t.clearing_price, PDEC) + '</td>';
+            html += '<td class="price-cell">' + fmt(t.clearing_price, PDEC, PRICE_DISPLAY) + '</td>';
             html += '<td>' + fmt(t.base_amount, DEC) + '</td>';
             html += '<td class="buy-cell">#' + t.buyer_nft_id + '</td>';
             html += '<td class="sell-cell">#' + t.seller_nft_id + '</td>';
