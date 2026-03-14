@@ -12,7 +12,7 @@ The same technology that automates jobs also destroys barriers. Things that used
 
 Not in theory. You're reading the result.
 
-This entire protocol — the smart contracts, the node software, the matching algorithms, the settlement logic, the token economics — was designed and built by an individual. Not a company. Not a venture-backed startup with 50 engineers. One person, with an AI partner, who decided that market infrastructure should be fair.
+This entire protocol — the smart contracts, the node software, the matching algorithms, the settlement logic, the token economics — was designed and built by an individual. Not a company. Not a venture-backed startup with 50 engineers. One person, with an AI partner, who decided that market infrastructure could be fair.
 
 ## That's not a threat. That's an invitation.
 
