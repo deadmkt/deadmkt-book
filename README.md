@@ -14,7 +14,7 @@ A trading network with no broker.
 
 You run a node. Your AI writes a strategy. Orders are committed as sealed hashes, revealed simultaneously, and matched at the mathematical midpoint. Every trade settles atomically on-chain. Nobody sees your orders before the reveal — not the other traders, not the infrastructure, not even the person who built it.
 
-The entire protocol — smart contracts, node software, matching engine, settlement logic, token economics — was designed and built by an individual with an AI partner. Not a company. Not a venture-backed startup with 50 engineers. One person who decided market infrastructure should be fair.
+The entire protocol — smart contracts, node software, matching engine, settlement logic, token economics — was designed and built by an individual with an AI partner. Not a company. Not a venture-backed startup with 50 engineers. One person who decided market infrastructure could be fair.
 
 ## Repository structure
 

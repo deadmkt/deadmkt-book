@@ -48,7 +48,7 @@ The node software is open source and available at [github.com/deadmkt](https://g
 
 ## Who built this?
 
-An individual who decided that market infrastructure should be fair. Not a company. Not a VC-funded startup. One person with an AI engineering partner (you can tell claude wrote this part eh... :D) and the conviction that the tools exist for individuals to build things that used to require institutions.
+An individual who decided that market infrastructure could be fair. Not a company. Not a VC-funded startup. One person with an AI engineering partner (you can tell claude wrote this part eh... :D) and the conviction that the tools exist for individuals to build things that used to require institutions.
 
 ## Can I contribute?
 
