@@ -142,6 +142,62 @@
 
     .stat-value.green { color: var(--green); }
 
+    /* Market cards */
+    .markets {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1px;
+      background: var(--border);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      overflow: hidden;
+      margin-bottom: 2rem;
+    }
+
+    .market-card {
+      background: var(--bg-card);
+      padding: 0.8rem 1rem;
+    }
+
+    .market-card-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 0.5rem;
+    }
+
+    .market-card-pair {
+      font-family: var(--mono);
+      font-size: 0.75rem;
+      font-weight: 500;
+    }
+
+    .market-card-pair.emm-kay { color: var(--emm-kay); }
+    .market-card-pair.kay-tee { color: var(--kay-tee); }
+    .market-card-pair.tee-emm { color: var(--tee-emm); }
+
+    .market-card-count {
+      font-family: var(--mono);
+      font-size: 0.65rem;
+      color: var(--text-faint);
+    }
+
+    .market-card-price {
+      font-family: var(--mono);
+      font-size: 1.1rem;
+      font-weight: 500;
+      color: var(--text);
+      margin-bottom: 0.3rem;
+    }
+
+    .market-card-range {
+      font-family: var(--mono);
+      font-size: 0.6rem;
+      color: var(--text-faint);
+    }
+
+    .market-card-range span { color: var(--text-dim); }
+
     /* Chart */
     .chart-container {
       border: 1px solid var(--border);
@@ -289,6 +345,7 @@
     .price-cell { color: var(--text); font-weight: 500; }
     .buy-cell { color: var(--green); }
     .sell-cell { color: var(--red); }
+    .batch-cell { color: var(--text-faint); font-size: 0.7rem; }
 
     .tx-link {
       color: var(--text-faint);
@@ -333,8 +390,11 @@
       .trade-table th:nth-child(5),
       .trade-table td:nth-child(5),
       .trade-table th:nth-child(6),
-      .trade-table td:nth-child(6) { display: none; }
+      .trade-table td:nth-child(6),
+      .trade-table th:nth-child(7),
+      .trade-table td:nth-child(7) { display: none; }
       .stats { grid-template-columns: repeat(2, 1fr); }
+      .markets { grid-template-columns: 1fr; }
       .chart-wrap { height: 160px; }
       .chart-legend { gap: 0.5rem; font-size: 0.6rem; }
     }
@@ -367,20 +427,49 @@
         <div class="stat-value" id="totalVolume">--</div>
       </div>
       <div class="stat">
-        <div class="stat-label">Trustees</div>
-        <div class="stat-value green" id="totalTrustees">--</div>
+        <div class="stat-label">Active Nodes</div>
+        <div class="stat-value green" id="activeNodes">--</div>
       </div>
       <div class="stat">
-        <div class="stat-label">Mints</div>
-        <div class="stat-value" id="totalMints">--</div>
-      </div>
-      <div class="stat">
-        <div class="stat-label">Burns</div>
-        <div class="stat-value" id="totalBurns">--</div>
+        <div class="stat-label">Markets</div>
+        <div class="stat-value" id="activeMarkets">--</div>
       </div>
       <div class="stat">
         <div class="stat-label">Last Block</div>
         <div class="stat-value" id="lastBlock">--</div>
+      </div>
+    </div>
+
+    <div class="markets" id="marketCards">
+      <div class="market-card">
+        <div class="market-card-header">
+          <span class="market-card-pair emm-kay">EMM/KAY</span>
+          <span class="market-card-count" id="mc-emm-kay-count">--</span>
+        </div>
+        <div class="market-card-price" id="mc-emm-kay-price">--</div>
+        <div class="market-card-range">
+          L <span id="mc-emm-kay-low">--</span> · H <span id="mc-emm-kay-high">--</span>
+        </div>
+      </div>
+      <div class="market-card">
+        <div class="market-card-header">
+          <span class="market-card-pair kay-tee">KAY/TEE</span>
+          <span class="market-card-count" id="mc-kay-tee-count">--</span>
+        </div>
+        <div class="market-card-price" id="mc-kay-tee-price">--</div>
+        <div class="market-card-range">
+          L <span id="mc-kay-tee-low">--</span> · H <span id="mc-kay-tee-high">--</span>
+        </div>
+      </div>
+      <div class="market-card">
+        <div class="market-card-header">
+          <span class="market-card-pair tee-emm">TEE/EMM</span>
+          <span class="market-card-count" id="mc-tee-emm-count">--</span>
+        </div>
+        <div class="market-card-price" id="mc-tee-emm-price">--</div>
+        <div class="market-card-range">
+          L <span id="mc-tee-emm-low">--</span> · H <span id="mc-tee-emm-high">--</span>
+        </div>
       </div>
     </div>
 
@@ -428,16 +517,17 @@
           <th>Quantity</th>
           <th>Buyer</th>
           <th>Seller</th>
+          <th>Batch</th>
           <th>Tx</th>
         </tr>
       </thead>
       <tbody id="tradeBody">
-        <tr><td colspan="7" class="empty"><span class="waiting">waiting for trades...</span></td></tr>
+        <tr><td colspan="8" class="empty"><span class="waiting">waiting for trades...</span></td></tr>
       </tbody>
     </table>
 
     <div class="footer">
-      <span>DeadMKT Testnet</span>
+      <span>DeadMKT Testnet · DMKT8</span>
       <span>Refreshes every 5s</span>
       <a href="https://deadmkt.com/docs/#/guides/run-a-node">Run a node</a>
     </div>
@@ -445,16 +535,16 @@
   </div>
 
   <script>
-    const API = 'https://idx-testnet.deadmkt.com/api';
-    const POLL = 5000;
-    const DEC = 5;
-    const PDEC = 8;
-    const PRICE_DISPLAY = 5;
-    const MAX_CHART_POINTS = 100;
+    var API = 'https://idx-testnet.deadmkt.com/api';
+    var POLL = 5000;
+    var DEC = 5;
+    var PDEC = 8;
+    var PRICE_DISPLAY = 5;
+    var MAX_CHART_POINTS = 100;
 
-    let pair = 'all';
-    let prevFirst = null;
-    let chart = null;
+    var pair = 'all';
+    var prevFirst = null;
+    var chart = null;
 
     // ── Chart setup ────────────────────────────────────────────────
     function initChart() {
@@ -552,10 +642,8 @@
     function updateChart(trades) {
       if (!trades || !trades.length) return;
 
-      // Trades come newest first — reverse for chronological
       var sorted = trades.slice().reverse();
 
-      // Separate array per pair
       var emmPrices = [];
       var kayPrices = [];
       var teePrices = [];
@@ -570,16 +658,13 @@
         else if (sym === 'TEE/EMM') teePrices.push(price);
       }
 
-      // Use longest series for x-axis labels
       var maxLen = Math.max(emmPrices.length, kayPrices.length, teePrices.length);
       if (maxLen > MAX_CHART_POINTS) maxLen = MAX_CHART_POINTS;
 
-      // Trim to most recent points
       emmPrices = emmPrices.slice(-maxLen);
       kayPrices = kayPrices.slice(-maxLen);
       teePrices = teePrices.slice(-maxLen);
 
-      // Pad shorter arrays at the front with null
       while (emmPrices.length < maxLen) emmPrices.unshift(null);
       while (kayPrices.length < maxLen) kayPrices.unshift(null);
       while (teePrices.length < maxLen) teePrices.unshift(null);
@@ -595,7 +680,15 @@
     }
 
     // ── Formatting ─────────────────────────────────────────────────
-    function fmt(raw, d, display) { return raw != null ? (Number(raw) / Math.pow(10, d)).toFixed(display != null ? display : d) : '--'; }
+    function fmtPrice(raw) {
+      if (raw == null || raw === 0) return '--';
+      return (Number(raw) / Math.pow(10, PDEC)).toFixed(PRICE_DISPLAY);
+    }
+
+    function fmtQty(raw) {
+      if (raw == null) return '--';
+      return (Number(raw) / Math.pow(10, DEC)).toFixed(DEC);
+    }
 
     function fmtVol(raw) {
       if (raw == null) return '--';
@@ -623,37 +716,89 @@
       document.getElementById('statusText').textContent = t;
     }
 
+    // ── Market card slugs ──────────────────────────────────────────
+    function mcSlug(symbol) {
+      return symbol.toLowerCase().replace('/', '-');
+    }
+
     // ── Poll ───────────────────────────────────────────────────────
     async function poll() {
       try {
-        var [sr, tr] = await Promise.all([
+        // Build trades URL with server-side pair filter
+        var tradesUrl = API + '/trades?limit=200';
+        if (pair !== 'all') tradesUrl += '&pair=' + encodeURIComponent(pair);
+
+        var [sr, tr, mr] = await Promise.all([
           fetch(API + '/stats'),
-          fetch(API + '/trades?limit=200')
+          fetch(tradesUrl),
+          fetch(API + '/markets'),
         ]);
         if (!sr.ok || !tr.ok) throw new Error('api');
         var stats = await sr.json();
-        var allData = await tr.json();
-        var allTrades = allData.trades || [];
+        var tradeData = await tr.json();
+        var marketData = mr.ok ? await mr.json() : { markets: [] };
 
+        var allTrades = tradeData.trades || [];
+
+        // ── Stats bar ──
         document.getElementById('totalTrades').textContent = stats.total_trades || 0;
         document.getElementById('totalVolume').textContent = fmtVol(stats.total_volume);
-        document.getElementById('totalTrustees').textContent = stats.total_trustees || 0;
-        document.getElementById('totalMints').textContent = stats.total_mints || 0;
-        document.getElementById('totalBurns').textContent = stats.total_burns || 0;
         document.getElementById('lastBlock').textContent = stats.last_indexed_block || '--';
 
-        // Update chart with all trades (unfiltered)
-        updateChart(allTrades);
+        // Active nodes: count distinct NFT IDs from recent trades
+        var nftIds = {};
+        for (var i = 0; i < allTrades.length; i++) {
+          nftIds[allTrades[i].buyer_nft_id] = true;
+          nftIds[allTrades[i].seller_nft_id] = true;
+        }
+        document.getElementById('activeNodes').textContent = Object.keys(nftIds).length;
 
-        // Filter for table display
-        var trades = pair === 'all' ? allTrades : allTrades.filter(function(t) { return t.symbol === pair; });
-        trades = trades.slice(0, 50);
+        // Active markets from /api/markets
+        var markets = marketData.markets || [];
+        document.getElementById('activeMarkets').textContent = markets.length + '/3';
 
+        // ── Market cards ──
+        var pairMap = {};
+        for (var i = 0; i < markets.length; i++) {
+          pairMap[markets[i].symbol] = markets[i];
+        }
+        var pairNames = ['EMM/KAY', 'KAY/TEE', 'TEE/EMM'];
+        for (var p = 0; p < pairNames.length; p++) {
+          var sym = pairNames[p];
+          var slug = mcSlug(sym);
+          var m = pairMap[sym];
+          if (m) {
+            var el;
+            el = document.getElementById('mc-' + slug + '-price');
+            if (el) el.textContent = fmtPrice(m.last_price);
+            el = document.getElementById('mc-' + slug + '-count');
+            if (el) el.textContent = m.trade_count + ' trades';
+            el = document.getElementById('mc-' + slug + '-low');
+            if (el) el.textContent = fmtPrice(m.low);
+            el = document.getElementById('mc-' + slug + '-high');
+            if (el) el.textContent = fmtPrice(m.high);
+          }
+        }
+
+        // ── Chart (always uses all trades for full picture) ──
+        // Fetch unfiltered trades for chart if we're pair-filtered
+        if (pair !== 'all') {
+          var chartResp = await fetch(API + '/trades?limit=200');
+          if (chartResp.ok) {
+            var chartData = await chartResp.json();
+            updateChart(chartData.trades || []);
+          }
+        } else {
+          updateChart(allTrades);
+        }
+
+        // ── Trade table ──
+        var trades = allTrades.slice(0, 50);
         document.getElementById('tradeCount').textContent = trades.length + ' shown';
 
         var tbody = document.getElementById('tradeBody');
         if (!trades.length) {
-          tbody.innerHTML = '<tr><td colspan="7" class="empty"><span class="waiting">waiting for trades...</span></td></tr>';
+          tbody.innerHTML = '<tr><td colspan="8" class="empty"><span class="waiting">waiting for trades...</span></td></tr>';
         } else {
           var newFirst = trades[0].trade_id;
           var hasNew = prevFirst && newFirst !== prevFirst;
@@ -664,17 +809,18 @@
             html += '<tr' + (flash ? ' class="new-trade"' : '') + '>';
             html += '<td class="time-cell">' + fmtTime(t.timestamp) + '</td>';
             html += '<td><span class="pair-tag ' + pc(t.symbol) + '">' + (t.symbol||'--') + '</span></td>';
-            html += '<td class="price-cell">' + fmt(t.clearing_price, PDEC, PRICE_DISPLAY) + '</td>';
-            html += '<td>' + fmt(t.base_amount, DEC) + '</td>';
+            html += '<td class="price-cell">' + fmtPrice(t.clearing_price) + '</td>';
+            html += '<td>' + fmtQty(t.base_amount) + '</td>';
             html += '<td class="buy-cell">#' + t.buyer_nft_id + '</td>';
             html += '<td class="sell-cell">#' + t.seller_nft_id + '</td>';
+            html += '<td class="batch-cell">' + (t.batch_id || '--') + '</td>';
             html += '<td><a class="tx-link" href="https://testnet.suprascan.io/tx/' + (t.tx_hash||'') + '" target="_blank" rel="noopener">' + shortTx(t.tx_hash) + '</a></td>';
             html += '</tr>';
           }
           tbody.innerHTML = html;
           prevFirst = newFirst;
         }
-        setStatus('live', 'indexer connected');
+        setStatus('live', 'indexer connected · block ' + (stats.last_indexed_block || '?'));
       } catch(e) {
         setStatus('error', 'indexer offline');
       }
