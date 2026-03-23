@@ -25,6 +25,15 @@ export default defineConfig({
 
   sitemap: {
     hostname: 'https://deadmkt.com',
+    transformItems: (items) => {
+      return items.map(item => {
+        // Add /docs/ prefix to all VitePress page URLs
+        if (!item.url.startsWith('docs')) {
+          item.url = 'docs/' + item.url
+        }
+        return item
+      })
+    },
   },
 
   themeConfig: {
