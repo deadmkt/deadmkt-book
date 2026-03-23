@@ -385,6 +385,9 @@
 
     .footer a { color: var(--text-dim); text-decoration: none; }
     .footer a:hover { color: var(--text); }
+    .footer .footer-links { display: flex; gap: 1.2rem; }
+    .footer .footer-links a { color: var(--text-dim); text-decoration: none; font-family: var(--mono); font-size: 0.7rem; }
+    .footer .footer-links a:hover { color: var(--text); }
 
     @media (max-width: 700px) {
       .trade-table th:nth-child(5),
@@ -406,9 +409,11 @@
     <div class="header">
       <h1>dead<span>MKT</span> // live</h1>
       <div class="header-links">
-        <a href="https://deadmkt.com">home</a>
-        <a href="https://deadmkt.com/docs/">docs</a>
+        <a href="/">home</a>
+        <a href="/docs/">docs</a>
+        <a href="/docs/guides/run-a-node">run a node</a>
         <a href="https://github.com/deadmkt">github</a>
+        <a href="https://x.com/DeadMKT">X</a>
       </div>
     </div>
 
@@ -529,7 +534,12 @@
     <div class="footer">
       <span>DeadMKT Testnet · DMKT9</span>
       <span>Refreshes every 5s</span>
-      <a href="https://deadmkt.com/docs/#/guides/run-a-node">Run a node</a>
+      <div class="footer-links">
+        <a href="/">home</a>
+        <a href="/docs/">docs</a>
+        <a href="/docs/guides/write-a-strategy">write a strategy</a>
+        <a href="/docs/manifesto">manifesto</a>
+      </div>
     </div>
 
   </div>

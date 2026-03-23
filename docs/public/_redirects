@@ -1,0 +1,19 @@
+# Old Docsify hash-based URLs → clean VitePress paths
+/docs/#/manifesto /docs/manifesto 301
+/docs/#/vision /docs/vision 301
+/docs/#/protocol/overview /docs/protocol/overview 301
+/docs/#/protocol/how-trading-works /docs/protocol/how-trading-works 301
+/docs/#/protocol/trippples /docs/protocol/trippples 301
+/docs/#/protocol/nft-identity /docs/protocol/nft-identity 301
+/docs/#/protocol/pools /docs/protocol/pools 301
+/docs/#/protocol/security /docs/protocol/security 301
+/docs/#/guides/getting-started /docs/guides/getting-started 301
+/docs/#/guides/run-a-node /docs/guides/run-a-node 301
+/docs/#/guides/write-a-strategy /docs/guides/write-a-strategy 301
+/docs/#/guides/websocket-api /docs/guides/websocket-api 301
+/docs/#/guides/token-actions /docs/guides/token-actions 301
+/docs/#/guides/faq /docs/guides/faq 301
+/docs/#/reference/config /docs/reference/config 301
+/docs/#/community/contributing /docs/community/contributing 301
+/docs/#/community/license /docs/community/license 301
+/docs/#/community/links /docs/community/links 301

@@ -10,7 +10,7 @@ No. A DEX typically means you trade against a liquidity pool (like Uniswap's AMM
 
 ## What are EMM, KAY, and TEE?
 
-Purpose-built tokens for the protocol's game theory. They don't represent external assets like dollars or gold. They exist to create a closed, circular market structure with three trading pairs. Read more in [Trippples Tokens](protocol/trippples.md).
+Purpose-built tokens for the protocol's game theory. They don't represent external assets like dollars or gold. They exist to create a closed, circular market structure with three trading pairs. Read more in [Trippples Tokens](/protocol/trippples).
 
 ## Do I need to know Rust?
 
@@ -18,7 +18,7 @@ No. The node is a pre-built binary — you just run it. Strategies are written i
 
 ## How much SUPRA do I need?
 
-About a minimum of 50 testnet SUPRA covers everything: NFT minting, bond, token minting, and initial gas. On testnet, SUPRA is free from the faucet:
+About a minimum of 20 testnet SUPRA covers everything: NFT minting, bond, token minting, and initial gas. On testnet, SUPRA is free from the faucet:
 
 ```
 https://rpc-testnet.supra.com/rpc/v1/wallet/faucet/YOUR_ADDRESS
@@ -52,7 +52,7 @@ An individual who decided that market infrastructure could be fair. Not a compan
 
 ## Can I contribute?
 
-Yes. Code, strategies, documentation, feedback — all welcome. See [Contributing](community/contributing.md).
+Yes. Code, strategies, documentation, feedback — all welcome. See [Contributing](/community/contributing).
 
 ## Where do I report issues or ask questions?
 
