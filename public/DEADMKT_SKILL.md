@@ -1,221 +1,392 @@
 ---
 name: deadmkt
-version: 0.1.0
-description: DeadMKT — Trustless market-making protocol on Supra L1. Query trades, markets, and events. Run nodes. Build strategies.
+version: 0.2.0
+description: DeadMKT — Peer-to-peer trading protocol on Supra L1. Connect via WebSocket, trade in batch cycles, manage tokens. Your AI runs your node.
 homepage: https://deadmkt.com
-metadata: {"category":"defi","chain":"supra","license":"AGPL-3.0"}
+metadata: {"category":"defi","chain":"supra","license":"AGPL-3.0","api_base":"ws://localhost:9090"}
 ---
 
 # DeadMKT Skill
 
-DeadMKT is a trustless, decentralised market-making protocol built on Supra Layer-1. Traders run nodes that commit/reveal/match/settle in batch cycles. Every action is on-chain. No central order book, no custodial risk.
+DeadMKT is a peer-to-peer electronic communication network for trading. No broker, no counterparty, no hidden extraction. Traders run nodes that commit/reveal/match/settle in batch cycles. Every settlement is on-chain. Every price is math, not opinion.
+
+Your AI connects to your node via WebSocket, receives market data each batch, and sends trading decisions back. The node handles signing, gossip, and settlement.
 
 ## Skill Files
 
-| File | Description |
-|------|-------------|
-| **SKILL.md** (this file) | Full protocol reference, API docs, node operations |
+| File | URL |
+|------|-----|
+| **SKILL.md** (this file) | `https://deadmkt.com/DEADMKT_SKILL.md` |
+
+**Install locally:**
+```bash
+mkdir -p ~/.deadmkt/skills
+curl -s https://deadmkt.com/DEADMKT_SKILL.md > ~/.deadmkt/skills/SKILL.md
+```
 
 ## Quick Reference
 
 | Resource | URL |
 |----------|-----|
 | Website | https://deadmkt.com |
-| Testnet Indexer | http://idx.testnet.deadmkt.com:8080 |
+| Docs | https://deadmkt.com/docs/ |
+| Live Trades | https://deadmkt.com/trades |
+| Indexer API | https://idx-testnet.deadmkt.com/api |
 | Testnet RPC | https://rpc-testnet.supra.com |
-| Contract | `0x1c19ed2b9e864b6d565feeab65d8fed5204a78b4a9daf19ef7e198afc91b8ccf` |
+| Contract | `0xc4b49db5a93d5cc419b2a2af168b553016e8d509b6aff74d2d5e29f8e7c74e64` |
 | GitHub | https://github.com/deadmkt |
 | X | https://x.com/DeadMKT |
 
 ---
 
-## Core Concepts
+## How It Works
 
-### How It Works
+DeadMKT operates in **batch cycles** of 20 blocks (~7 seconds):
 
-DeadMKT operates in **batch cycles** of 20 blocks (~8 seconds on testnet, ~24 seconds on mainnet):
+1. **COMMIT** (6 blocks) -- Nodes submit hashed orders. Nobody sees prices or quantities.
+2. **REVEAL** (8 blocks) -- Nodes reveal their commitments. Prices become visible.
+3. **MATCH** (2 blocks) -- Protocol matches compatible buy/sell orders within the pool.
+4. **SWAP** (4 blocks) -- Matched trades settle on-chain via escrow. Tokens move atomically.
 
-1. **COMMIT** (6 blocks) — Nodes submit hashed orders. Nobody sees prices or quantities.
-2. **REVEAL** (8 blocks) — Nodes reveal their commitments. Prices become visible.
-3. **MATCH** (2 blocks) — Protocol matches compatible buy/sell orders within the pool.
-4. **SWAP** (4 blocks) — Matched trades settle on-chain via escrow. Tokens move atomically.
+Your strategy only needs to respond during COMMIT. Everything else is handled by the node.
 
-### Tokens (Trippples)
+---
 
-Three fungible tokens, all 5 decimals:
+## WebSocket API
 
-| Symbol | ID | Metadata Address |
-|--------|-----|-----------------|
-| EMM | 0 | `0xaaa5fea4d387996a61c50cfb66a54e41c73af3d8e1a14d1a10cd3b7c8d1768eb` |
-| KAY | 1 | `0xcd5b6d8e17cbca44a61156fb2c9ce2f263323599eee880c692e11dd114fb9741` |
-| TEE | 2 | `0x8a86da9f2be421f24ed3a018b1081973892be0866f1a89ad5038685470e4557c` |
+Your strategy connects to `ws://localhost:9090` inside the Docker container. The node sends events, your strategy sends actions.
+
+### Connection
+
+Connect and immediately authenticate:
+
+```json
+{"action": "auth", "token": "your_strategy_auth_token"}
+```
+
+Success:
+```json
+{"event": "auth_ok", "data": {"nft_id": 42, "network": "testnet"}}
+```
+
+The auth token is in your node's `config.json` or `DEADMKT_AUTH_TOKEN` env var.
+
+### Events (node -> strategy)
+
+#### batch_start
+
+Sent at the start of each COMMIT phase. Respond with orders within 3 seconds.
+
+```json
+{
+  "event": "batch_start",
+  "data": {
+    "batch_id": 500,
+    "pool_id": 2,
+    "escrow": {"EMM": "330.00000", "KAY": "285.50000", "TEE": "310.25000"},
+    "escrow_confirmed": {"EMM": "330.00000", "KAY": "285.50000", "TEE": "310.25000"},
+    "wallet": {"EMM": "0.00000", "KAY": "0.00000", "TEE": "0.00000"},
+    "gas_balance": "1.50000000",
+    "mint_state": {
+      "state": "OPEN",
+      "hold_duration_secs": 432000,
+      "period_end": 1774356628,
+      "block_end": 0,
+      "has_pending_mint": false,
+      "pending_claimable_at": 0
+    },
+    "circulating": {"EMM": "150000.00000", "KAY": "148000.00000", "TEE": "152000.00000"},
+    "vault_locks": [],
+    "batch_params": {
+      "blocks_per_batch": 20,
+      "commits_per_batch": 3
+    },
+    "pending_settlements": [],
+    "peers_in_pool": 3,
+    "last_batch": {"batch_id": 499, "matches": 3, "volume": "1500.00000"},
+    "node_health": {
+      "gas_status": "Normal",
+      "gossip_connected": true,
+      "gossip_peers": 4,
+      "settle_pending_count": 0,
+      "settle_failed_recent": 0,
+      "uptime_batches": 1200,
+      "block_height": 79000000,
+      "timestamp": 1774090000
+    }
+  }
+}
+```
+
+**Key fields for trading decisions:**
+- `escrow` -- your available balances (projected, accounts for pending trades)
+- `escrow_confirmed` -- on-chain confirmed balances
+- `peers_in_pool` -- how many other nodes you're trading against
+- `mint_state.has_pending_mint` -- whether you have unclaimed tokens
+- `gas_balance` -- SUPRA for transaction fees
+- `last_batch.matches` -- how many trades filled last batch
+
+#### reveal_start
+
+```json
+{"event": "reveal_start", "data": {"batch_id": 500, "my_commits": ["0xabc...", "0xdef..."]}}
+```
+
+Usually you reveal everything. Return indices of commits to reveal.
+
+#### match_result
+
+```json
+{
+  "event": "match_result",
+  "data": {
+    "batch_id": 500,
+    "matches": [
+      {"pair": "EMM/KAY", "side": "buy", "price": "0.05000000", "quantity": "100.00000", "counterparty_nft_id": 99}
+    ]
+  }
+}
+```
+
+#### settlement
+
+```json
+{
+  "event": "settlement",
+  "data": {
+    "batch_id": 500,
+    "trade_id": "0xabcd...",
+    "status": "confirmed",
+    "pair": "EMM/KAY",
+    "clearing_price": "0.05000000",
+    "base_amount": "100.00000",
+    "tx_hash": "0xtx..."
+  }
+}
+```
+
+#### token_action_result
+
+```json
+{"event": "token_action_result", "data": {"action": "mint", "success": true, "message": "gas=450"}}
+```
+
+### Actions (strategy -> node)
+
+#### commit -- Place orders
+
+Respond to `batch_start` within 3 seconds:
+
+```json
+{
+  "action": "commit",
+  "orders": [
+    {"pair": "EMM/KAY", "side": "buy", "price": "0.04990000", "quantity": "100.00000"},
+    {"pair": "KAY/TEE", "side": "sell", "price": "0.05100000", "quantity": "50.00000"}
+  ]
+}
+```
+
+**Order fields:**
+- `pair` -- one of `EMM/KAY`, `KAY/TEE`, `TEE/EMM`
+- `side` -- `"buy"` or `"sell"`
+- `price` -- 8 decimal string (e.g. `"0.05000000"`)
+- `quantity` -- 5 decimal string (e.g. `"100.00000"`)
+
+Up to 3 orders per batch (`commits_per_batch`). Orders that cross (buyer price >= seller price) will match.
+
+#### reveal -- Select which commits to reveal
+
+```json
+{"action": "reveal", "reveal_indices": [0, 1]}
+```
+
+Default: reveal all. Only respond if you want to selectively withhold.
+
+#### Token actions (send anytime)
+
+**mint** -- Request new tokens (costs SUPRA):
+```json
+{"action": "mint", "m": 33000000, "k": 33000000, "t": 33000000}
+```
+
+**claim_mint** -- Claim after hold period:
+```json
+{"action": "claim_mint"}
+```
+
+**burn** -- Burn tokens, receive SUPRA:
+```json
+{"action": "burn", "amount": 10000000}
+```
+
+**lock** -- Lock tokens in vault:
+```json
+{"action": "lock", "symbol": "EMM", "amount": 50000000, "duration_secs": 86400}
+```
+
+**unlock** -- Unlock after expiry:
+```json
+{"action": "unlock", "index": 0}
+```
+
+Token actions are processed asynchronously. Results arrive via `token_action_result`.
+
+Return token actions alongside orders:
+```json
+{
+  "action": "commit",
+  "orders": [...],
+  "token_actions": [{"action": "claim_mint"}]
+}
+```
+
+---
+
+## Strategy Pattern
+
+A minimal Python strategy:
+
+```python
+from decimal import Decimal
+
+def on_auth(data):
+    """Called once after authentication. Return token actions or []."""
+    return []
+
+def on_batch_start(ctx):
+    """Called each COMMIT phase. Return orders or {orders, token_actions}."""
+    escrow = ctx.get("escrow", {})
+    batch_id = ctx.get("batch_id", 0)
+
+    emm = Decimal(escrow.get("EMM", "0"))
+    kay = Decimal(escrow.get("KAY", "0"))
+
+    orders = []
+    if emm > Decimal("1.0"):
+        orders.append({
+            "pair": "EMM/KAY",
+            "side": "sell",
+            "price": "0.05000000",
+            "quantity": str((emm * Decimal("0.01")).quantize(Decimal("0.00001"))),
+        })
+
+    return orders
+
+def on_reveal(ctx, my_commits):
+    """Called at REVEAL phase. Return indices to reveal (default: all)."""
+    return list(range(len(my_commits)))
+
+def on_match(ctx, matches):
+    """Called after matching. Informational."""
+    pass
+
+def on_settlement(ctx, result):
+    """Called after settlement. Informational."""
+    pass
+
+def on_token_result(data):
+    """Called after token action completes."""
+    pass
+```
+
+Mount as strategy:
+```bash
+docker run -d --name deadmkt-node \
+  -v ~/.deadmkt-node:/data \
+  -v ~/my_strategy.py:/data/strategy.py \
+  -e DEADMKT_KEYSTORE_PASSWORD='password' \
+  -p 9090:9090 -p 9191:9191 \
+  deadmkt-node:0.1.7
+```
+
+---
+
+## Tokens (Trippples)
+
+Three fungible tokens, all 5 decimals. Circular economy: each appears as base in one pair and quote in another.
+
+| Symbol | Decimals | 1.0 = raw |
+|--------|----------|-----------|
+| EMM | 5 | 100,000 |
+| KAY | 5 | 100,000 |
+| TEE | 5 | 100,000 |
+
+**SUPRA** (gas/backing): 8 decimals, 1.0 = 100,000,000 raw.
+
+### Token Metadata Addresses (DMKT10)
+
+| Symbol | Metadata Address |
+|--------|-----------------|
+| EMM | Derived: `sha3_256(contract_addr \|\| "deadmkt_emm" \|\| 0xFE)` |
+| KAY | Derived: `sha3_256(contract_addr \|\| "deadmkt_kay" \|\| 0xFE)` |
+| TEE | Derived: `sha3_256(contract_addr \|\| "deadmkt_tee" \|\| 0xFE)` |
+
+Metadata addresses are deterministic named objects -- compute locally without RPC.
 
 ### Market Pairs
 
-| Pair | Symbol Hex |
-|------|-----------|
-| EMM/KAY | `0x454d4d2f4b4159` |
-| KAY/TEE | `0x4b41592f544545` |
-| TEE/EMM | `0x5445452f454d4d` |
+| Pair | Base | Quote | Symbol Hex |
+|------|------|-------|-----------|
+| EMM/KAY | EMM | KAY | `0x454d4d2f4b4159` |
+| KAY/TEE | KAY | TEE | `0x4b41592f544545` |
+| TEE/EMM | TEE | EMM | `0x5445452f454d4d` |
 
-### Key Roles
+### Token Lifecycle
 
-- **Trustee** — Runs a node, holds a TrusteeNFT, signs transactions, executes strategy
-- **Beneficiary** — Receives profits, can trigger withdrawals, holds a BeneficiaryNFT
-- **Strategy** — Python script that connects via WebSocket, sends buy/sell signals each batch
+```
+    SUPRA --> request_mint --> [hold period] --> claim_mint --> ESCROW
+                                                                 |
+                                                          trade (batch cycle)
+                                                                 |
+                                                     burn_from_escrow --> SUPRA
+```
+
+Tokens never exist in free wallets. They live in escrow (trading), vault (locked), or don't exist (burned). SUPRA is the only exit currency.
 
 ---
 
 ## Indexer API
 
-**Base URL:** `http://idx.testnet.deadmkt.com:8080`
+**Base URL:** `https://idx-testnet.deadmkt.com/api`
 
-All endpoints are GET requests. No authentication required (free tier).
+All GET requests. No authentication required.
 
-### Health Check
+| Endpoint | Description |
+|----------|-------------|
+| `/api/health` | Health check |
+| `/api/stats` | Total trades, volume, mints, trustees, last indexed block |
+| `/api/markets` | Market pairs with last price, high/low, trade count, volume |
+| `/api/trades` | Recent trades (filterable: `?pair=EMM/KAY&limit=50`) |
+| `/api/trades/:id` | Single trade by ID |
+| `/api/events` | All indexed events (filterable: `?type=MintRequested`) |
+| `/api/trustee/:address` | Events for a specific trustee |
+| `/api/mints` | Mint events |
+| `/api/burns` | Burn events |
+| `/api/locks` | Lock/unlock events |
+
+### Example: Get latest trades
 
 ```bash
-curl http://idx.testnet.deadmkt.com:8080/api/health
+curl -s https://idx-testnet.deadmkt.com/api/trades?limit=10
 ```
 
-Response:
-```json
-{"status": "ok"}
-```
-
-### Stats
+### Example: Check network stats
 
 ```bash
-curl http://idx.testnet.deadmkt.com:8080/api/stats
+curl -s https://idx-testnet.deadmkt.com/api/stats
 ```
 
 Response:
 ```json
 {
-  "last_indexed_block": 76208187,
-  "total_trades": 0,
-  "total_mints": 0,
+  "last_indexed_block": 79132325,
+  "total_trades": 1830,
+  "total_mints": 6,
   "total_burns": 0,
-  "total_trustees": 0,
-  "total_volume": 0
+  "total_trustees": 6,
+  "total_volume": 22808058
 }
-```
-
-### Markets
-
-```bash
-curl http://idx.testnet.deadmkt.com:8080/api/markets
-```
-
-Returns active market pairs with metadata addresses and min_quantity.
-
-### Trades
-
-```bash
-# All trades
-curl http://idx.testnet.deadmkt.com:8080/api/trades
-
-# Single trade
-curl http://idx.testnet.deadmkt.com:8080/api/trades/TRADE_ID
-
-# Trades by market
-curl "http://idx.testnet.deadmkt.com:8080/api/trades?market=EMM/KAY"
-```
-
-### Events
-
-```bash
-# All events
-curl http://idx.testnet.deadmkt.com:8080/api/events
-
-# Filter by type
-curl "http://idx.testnet.deadmkt.com:8080/api/events?type=NFTPairMinted"
-```
-
-26 event types are indexed, including: NFTPairMinted, TraderRegistered, TradeSettled, MintRequested, MintClaimed, TokensLocked, TokensUnlocked, HeartbeatSent, BondConfigUpdated, and more.
-
-### Trustee Events
-
-```bash
-curl http://idx.testnet.deadmkt.com:8080/api/trustee/0xADDRESS
-```
-
-Returns all events for a specific trustee address.
-
-### Mints, Burns, Locks
-
-```bash
-curl http://idx.testnet.deadmkt.com:8080/api/mints
-curl http://idx.testnet.deadmkt.com:8080/api/burns
-curl http://idx.testnet.deadmkt.com:8080/api/locks
-```
-
----
-
-## On-Chain View Functions
-
-Query contract state directly via Supra RPC. All view functions are free (no gas).
-
-### Get Market Pair
-
-```bash
-curl -X POST https://rpc-testnet.supra.com/rpc/v2/view \
-  -H "Content-Type: application/json" \
-  -d '{
-    "function": "0x1c19ed...::settlement::get_market_pair",
-    "type_arguments": [],
-    "arguments": ["0x454d4d2f4b4159"]
-  }'
-```
-
-### Get Escrow Balance
-
-```bash
-curl -X POST https://rpc-testnet.supra.com/rpc/v2/view \
-  -H "Content-Type: application/json" \
-  -d '{
-    "function": "0x1c19ed...::escrow::get_balance",
-    "type_arguments": [],
-    "arguments": ["1", "0xaaa5fea4d387996a61c50cfb66a54e41c73af3d8e1a14d1a10cd3b7c8d1768eb"]
-  }'
-```
-
-Arguments: `[nft_id, metadata_address]`
-
-### Check if Address is Trustee
-
-```bash
-curl -X POST https://rpc-testnet.supra.com/rpc/v2/view \
-  -H "Content-Type: application/json" \
-  -d '{
-    "function": "0x1c19ed...::nft::is_trustee",
-    "type_arguments": [],
-    "arguments": ["0xADDRESS"]
-  }'
-```
-
-### Get Batch Parameters
-
-```bash
-curl -X POST https://rpc-testnet.supra.com/rpc/v2/view \
-  -H "Content-Type: application/json" \
-  -d '{
-    "function": "0x1c19ed...::pool_config::get_batch_params",
-    "type_arguments": [],
-    "arguments": []
-  }'
-```
-
-### Get Token Balance (Wallet)
-
-```bash
-curl -X POST https://rpc-testnet.supra.com/rpc/v2/view \
-  -H "Content-Type: application/json" \
-  -d '{
-    "function": "0x1::primary_fungible_store::balance",
-    "type_arguments": ["0x1::fungible_asset::Metadata"],
-    "arguments": ["0xWALLET_ADDRESS", "0xTOKEN_METADATA_ADDRESS"]
-  }'
 ```
 
 ---
@@ -226,178 +397,62 @@ curl -X POST https://rpc-testnet.supra.com/rpc/v2/view \
 
 - Docker
 - 1GB+ RAM
-- Outbound internet (no port forwarding needed for non-bootstrap nodes)
-- ~10 SUPRA for gas (testnet: free from faucet)
+- Outbound internet
+- ~50 SUPRA for initial setup + gas (testnet: free from faucet)
 
 ### Quick Start
 
 ```bash
 # Build
-mkdir ~/deadmkt-node && cd ~/deadmkt-node
-unzip deadmkt-node-B5_7.zip
-docker build -t deadmkt-node .
+docker build -t deadmkt-node:0.1.7 .
 
-# Setup wizard (interactive)
-docker run -it -v deadmkt-data:/data deadmkt-node deadmkt-node setup
+# Setup wizard (interactive -- creates keypair, mints NFT, registers with escrow)
+docker run -it --rm -v ~/.deadmkt-node:/data deadmkt-node:0.1.7 deadmkt-node setup
 
 # Run with strategy
 docker run -d --name deadmkt-node \
-  -v deadmkt-data:/data \
-  -p 9191:9191 \
-  -e DEADMKT_KEYSTORE_PASSWORD='your_password' \
-  deadmkt-node
+  -v ~/.deadmkt-node:/data \
+  -v ~/my_strategy.py:/data/strategy.py \
+  -e DEADMKT_KEYSTORE_PASSWORD='password' \
+  -p 9090:9090 -p 9191:9191 \
+  deadmkt-node:0.1.7
 
-# Run as peer only (no strategy, no trading)
+# Run as bootstrap peer (no trading)
 docker run -d --name deadmkt-peer \
-  -v deadmkt-data:/data \
-  -p 9191:9191 \
-  -e DEADMKT_KEYSTORE_PASSWORD='your_password' \
+  -v ~/.deadmkt-peer:/data \
   -e DEADMKT_NO_STRATEGY=1 \
-  deadmkt-node
+  -e DEADMKT_KEYSTORE_PASSWORD='password' \
+  -p 9090:9090 -p 9191:9191 \
+  deadmkt-node:0.1.7
 ```
-
-### Setup Wizard Flow
-
-The wizard is resume-safe. If it fails mid-way, re-run it.
-
-1. **Network** — Testnet (auto-selected)
-2. **Beneficiary** — address that receives profits
-3. **Keypair** — generates Ed25519, encrypts with password (or reuses existing keystore)
-4. **Funding** — send SUPRA to the generated trustee address
-5. **NFT** — mints TrusteeNFT + BeneficiaryNFT (1 SUPRA bond on testnet)
-6. **Registration** — registers with escrow, configures withdrawal paths
-7. **Token Minting** — auto-mints EMM/KAY/TEE from 90% of SUPRA (8 min hold)
-8. **Deposit** — deposits all tokens to escrow
-9. **Profit Config** — threshold percentage for sweeping profits to beneficiary
-10. **Auth Token** — generated for strategy WebSocket connections
 
 ### Environment Variables
 
-| Variable | Description | Required |
-|----------|-------------|----------|
-| `DEADMKT_KEYSTORE_PASSWORD` | Decrypts signing key | Yes (runtime) |
-| `DEADMKT_NO_STRATEGY` | Set to `1` to skip strategy wrapper | No |
-| `DEADMKT_AUTH_TOKEN` | Override strategy auth token | No |
+| Variable | Description |
+|----------|-------------|
+| `DEADMKT_KEYSTORE_PASSWORD` | Decrypts signing key (required at runtime) |
+| `DEADMKT_NO_STRATEGY` | Set to `1` for bootstrap/relay mode |
+| `DEADMKT_AUTH_TOKEN` | Override strategy auth token |
+| `DEADMKT_HEALTH_EXTERNAL` | Set to `1` to expose health endpoint on 0.0.0.0 |
 
 ### Ports
 
-| Port | Purpose | Expose? |
-|------|---------|---------|
-| 9090 | Strategy WebSocket (internal) | No (localhost only) |
-| 9191 | Gossip P2P | Yes (if bootstrap peer) |
+| Port | Purpose |
+|------|---------|
+| 9090 | Strategy WebSocket (localhost by default) |
+| 9191 | Gossip P2P (libp2p) |
+| 9292 | Health endpoint (localhost by default) |
 
-### Gas Configuration
+### Health Endpoint
 
-Set in `/data/config.json`:
+```bash
+curl http://localhost:9292
+```
 
+Response:
 ```json
-{
-  "max_gas_amount": 5000,
-  "gas_unit_price": 100000
-}
+{"status": "ok", "peers": 4, "block": 79000000}
 ```
-
-At `gas_unit_price: 100000`, max fee per transaction = `5000 × 100000 = 0.5 SUPRA`.
-
-Heartbeats cost ~0.012 SUPRA each, every ~75 seconds on testnet. Budget ~8 SUPRA/day on testnet, ~4 SUPRA/day on mainnet.
-
----
-
-## Writing Strategies
-
-Strategies are Python files that implement `on_batch_start()`. They connect to the node via WebSocket and send orders each batch.
-
-### Minimal Strategy
-
-```python
-def on_batch_start(data):
-    """Called at the start of each COMMIT phase.
-    
-    Args:
-        data: dict with keys:
-            - batch_id: current batch number
-            - pool_id: which pool this node is in
-            - escrow: {"EMM": "20.00000", "KAY": "20.00000", "TEE": "20.00000"}
-            - wallet: {"EMM": "0.00000", ...}
-            - markets: [{"symbol": "EMM/KAY", "min_quantity": 1}, ...]
-            
-    Returns:
-        List of order dicts, or empty list for no orders.
-    """
-    return []  # No orders this batch
-```
-
-### Order Format
-
-```python
-def on_batch_start(data):
-    return [
-        {
-            "symbol": "EMM/KAY",
-            "side": 0,           # 0 = buy, 1 = sell
-            "price": 5010000,    # 5.01 in 6-decimal fixed point
-            "quantity": 100000,  # 1.00000 in 5-decimal base units
-        },
-        {
-            "symbol": "EMM/KAY",
-            "side": 1,           # sell
-            "price": 4990000,    # 4.99
-            "quantity": 100000,
-        },
-    ]
-```
-
-### Strategy Events
-
-| Event | Function | Description |
-|-------|----------|-------------|
-| `batch_start` | `on_batch_start(data)` | New commit phase — return orders |
-| `reveal_start` | `on_reveal(data, my_commits)` | Reveal phase — return indices to reveal |
-| `match_result` | `on_match(data, matches)` | Match results — informational |
-| `settlement` | `on_settlement(data, details)` | Settlement complete — informational |
-
-### Hot Reload
-
-Edit `/data/strategy.py` while the node is running. Changes are detected at the next batch boundary and the strategy reloads automatically. No restart needed.
-
----
-
-## Contract Modules
-
-All deployed at `0x1c19ed2b9e864b6d565feeab65d8fed5204a78b4a9daf19ef7e198afc91b8ccf`:
-
-| Module | Package | Purpose |
-|--------|---------|---------|
-| `settlement` | DeadMKT_Settlement | Market pairs, trade matching, settlement |
-| `escrow` | DeadMKT_Settlement | Token custody, deposits, withdrawals |
-| `nft` | DeadMKT_Settlement | TrusteeNFT/BeneficiaryNFT, bonds |
-| `pool_config` | DeadMKT_Settlement | Batch params, pool sizing, heartbeat |
-| `tokens` | DeadMKT | EMM/KAY/TEE minting, burning, locking, dVRF |
-
-### Key Entry Functions
-
-**Tokens:**
-- `tokens::request_mint(m, k, t)` — Request token mint (costs SUPRA)
-- `tokens::claim_mint()` — Claim after hold period
-- `tokens::burn_mkt(amount)` — Burn equal triples, receive SUPRA back
-- `tokens::lock_tokens(symbol, amount, duration)` — Lock tokens for duration
-- `tokens::unlock_tokens(lock_id)` — Unlock after expiry
-
-**Escrow:**
-- `escrow::register_trader(nft_id, holding_days, rushed_enabled)` — Register for trading
-- `escrow::deposit(metadata_addr, amount)` — Deposit tokens to escrow
-- `escrow::heartbeat()` — Signal node is alive
-- `escrow::deregister_trader(nft_id)` — Exit trading (starts bond cooldown)
-
-**NFT:**
-- `nft::mint_pair(pubkey, beneficiary)` — Mint TrusteeNFT + BeneficiaryNFT
-- `nft::claim_bond(nft_id)` — Reclaim bond after lock period
-
-**Settlement:**
-- `settlement::add_market_pair(symbol, base_meta, quote_meta, min_qty)` — Admin: add pair
-- `settlement::commit(...)` — Submit hashed orders (called by node)
-- `settlement::reveal(...)` — Reveal commitments (called by node)
-- `settlement::settle(...)` — Execute matched trades (called by node)
 
 ---
 
@@ -410,44 +465,22 @@ All deployed at `0x1c19ed2b9e864b6d565feeab65d8fed5204a78b4a9daf19ef7e198afc91b8
 | Chain ID | 6 |
 | RPC | https://rpc-testnet.supra.com |
 | Explorer | https://testnet.suprascan.io |
-| VRF Address | `0x186ba2ba88f4a14ca51f6ce42702c7ebdf6bfcf738d897cc98b986ded6f1219e` |
-| Bootstrap Peers | `peer1-5.testnet.deadmkt.com:9191` |
-
-### Mainnet (Future)
-
-| Resource | Value |
-|----------|-------|
-| Chain ID | 8 |
-| RPC | https://rpc-mainnet.supra.com |
-| VRF Address | `0x9672d46410f540b47d7e1f732640c776fa91ea1b909f871b9b2b7527b0ea90ae` |
-| Bootstrap Peers | `peer1-5.deadmkt.com:9191` |
-
----
-
-## Metadata Address Derivation
-
-Token metadata addresses are deterministic named objects:
-
-```
-address = sha3_256(contract_address || seed || 0xFE)
-```
-
-Seeds: `deadmkt_emm`, `deadmkt_kay`, `deadmkt_tee`
-
-This means any tool can compute the metadata addresses locally without an RPC call.
+| Contract | `0xc4b49db5a93d5cc419b2a2af168b553016e8d509b6aff74d2d5e29f8e7c74e64` |
+| Bootstrap Peers | `peer1.testnet.deadmkt.com:9191` |
 
 ---
 
 ## Licenses
 
-- **Node, Contracts, Indexer:** AGPL-3.0 (open source, copyleft)
+- **Node, Contracts, Indexer:** AGPL-3.0
 - **Strategies, Starter Bot, Skill:** MIT (build and sell freely)
 
 ---
 
 ## Links
 
-- **Docs:** https://deadmkt.com
+- **Docs:** https://deadmkt.com/docs/
+- **Live Trades:** https://deadmkt.com/trades
 - **GitHub:** https://github.com/deadmkt
 - **X:** https://x.com/DeadMKT
-- **Indexer API:** http://idx.testnet.deadmkt.com:8080/api/
+- **Indexer API:** https://idx-testnet.deadmkt.com/api/
