@@ -215,7 +215,12 @@ Default: reveal all. Only respond if you want to selectively withhold.
 {"action": "claim_mint"}
 ```
 
-**burn** -- Burn tokens, receive SUPRA:
+**burn** -- Burn equal tokens from escrow, receive SUPRA (preferred):
+```json
+{"action": "burn_from_escrow", "amount": 10000000}
+```
+
+**burn (legacy)** -- Same as above, routes to burn_from_escrow:
 ```json
 {"action": "burn", "amount": 10000000}
 ```
