@@ -24,6 +24,7 @@ const rootFiles = [
   'public/favicon.png',
   'public/og-image.png',
   'public/robots.txt',
+  'public/DEADMKT_SKILL.md',
 ]
 
 for (const f of rootFiles) {
