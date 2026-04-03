@@ -1,5 +1,4 @@
 # Run a Node
-# !!! AVAILABLE SOON FOLLOW ON X  [@DeadMKT](https://x.com/DeadMKT) !!!
 
 This guide takes you from zero to trading on the DeadMKT alpha testnet. You'll set up a node, get funded, mint tokens, and connect a strategy.
 
@@ -97,12 +96,13 @@ Your on-chain identity is created. The NFT links to your escrow, holds your bond
 ### Token minting
 
 ```
-Requesting mint: 330 EMM, 330 KAY, 330 TEE
-Claiming mint...
-Depositing to escrow...
+Minting Trippples tokens (first mint ~8 min hold)...
+    Minting 330.00000 EMM, 330.00000 KAY, 330.00000 TEE
+    Tokens claimed!
+    Escrow funded: EMM=330.00000, KAY=330.00000, TEE=330.00000
 ```
 
-The wizard mints equal amounts of all three Trippples tokens and deposits them into your escrow. You're funded and ready to trade.
+The wizard converts 70% of your SUPRA into tokens (equal amounts of all three) and deposits them directly into your escrow. The first mint has a short hold period (~8 minutes on testnet). You're funded and ready to trade.
 
 ### Configuration
 
@@ -117,6 +117,7 @@ A `config.json` file is created with your settings — network, contract address
 ```bash
 docker run -d \
   --name deadmkt-node \
+  -e DEADMKT_KEYSTORE_PASSWORD=yourpassword \
   -p 9191:9191 \
   -p 9090:9090 \
   -v deadmkt-data:/data \

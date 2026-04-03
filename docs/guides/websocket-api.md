@@ -13,7 +13,18 @@ Connect to `ws://localhost:9090` and immediately send an auth message:
 The node responds with either:
 
 ```json
-{"event": "auth_ok", "data": {"nft_id": 42, "network": "testnet"}}
+{
+  "event": "auth_ok",
+  "data": {
+    "nft_id": 42,
+    "trustee_address": "0xabcd...1234",
+    "beneficiary_address": "0xef56...7890",
+    "markets": ["EMM/KAY", "KAY/TEE", "TEE/EMM"],
+    "token_decimals": 5,
+    "price_decimals": 8,
+    "contract_address": "0xbe4d...f009"
+  }
+}
 ```
 
 or:
@@ -57,6 +68,7 @@ Sent at the beginning of each batch cycle. Your strategy should respond with a `
     },
     "pending_settlements": [],
     "peers_in_pool": 7,
+    "min_trade_quantity": "1.00000",
     "last_batch": {"batch_id": 499, "matches": 3, "volume": "1500.00000"}
   }
 }
@@ -171,10 +183,18 @@ Claim a pending mint after the hold period expires.
 
 ### burn
 
-Burn equal amounts of all three tokens, receiving SUPRA back.
+Burn equal amounts of all three tokens, receiving SUPRA back to your **trustee** address (gas recovery). Also accepts `"burn_from_escrow"` as the action name.
 
 ```json
 {"action": "burn", "amount": 10000000}
+```
+
+### burn_to_beneficiary
+
+Same as burn, but SUPRA goes to your **beneficiary** address (profit distribution).
+
+```json
+{"action": "burn_to_beneficiary", "amount": 10000000}
 ```
 
 ### lock
@@ -191,6 +211,14 @@ Unlock tokens after the lock period expires.
 
 ```json
 {"action": "unlock", "index": 2}
+```
+
+### donate_dust
+
+Gift sub-minimum token amounts to another player's escrow. Amount must be less than the minimum trade quantity.
+
+```json
+{"action": "donate_dust", "recipient_nft_id": 5, "symbol": "KAY", "amount": 50000}
 ```
 
 ## Timing

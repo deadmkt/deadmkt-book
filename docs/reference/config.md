@@ -47,14 +47,6 @@ All four point to the same deployer address on testnet. They're separate fields 
 | `max_gas_amount` | number | `500000` | Maximum gas per transaction |
 | `gas_unit_price` | number | `100` | Gas price per unit |
 
-## Profit Taking
-
-| Field | Type | Default | Description |
-|-------|------|---------|-------------|
-| `profit_taking.base_capital` | object | `{"EMM": 33000000, ...}` | Base capital per token (base units) |
-| `profit_taking.threshold_pct` | number | `20` | Profit threshold percentage |
-| `profit_taking.transfer_mode` | string | `"all_excess"` | How to transfer profits |
-
 ## Withdrawal
 
 | Field | Type | Default | Description |
@@ -68,6 +60,9 @@ These override config file values:
 
 | Variable | Description |
 |----------|-------------|
-| `DEADMKT_KEYSTORE_PASSWORD` | Keystore decryption password (for Docker/automated setups) |
+| `DEADMKT_KEYSTORE_PASSWORD` | Keystore decryption password (required for Docker/automated setups) |
+| `DEADMKT_NO_STRATEGY` | Set to `1` to disable the built-in strategy and expose the WS port for an external agent |
+| `DEADMKT_STRATEGY_PATH` | Path to a Python strategy file (default: `/data/strategy.py`) |
 | `DEADMKT_CONTRACT_ADDR` | Override contract address |
 | `DEADMKT_DIAL_PEERS` | Comma-separated peer addresses to connect to |
+| `GOSSIP_PORT` | External gossip port for Docker NAT (advertised to peers for inbound connections) |
