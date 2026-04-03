@@ -169,13 +169,15 @@ If you are on a VPS with no desktop, you have two options:
 
 **Option A**: Install StarKey on your local machine (laptop or desktop) using the steps above. Get testnet SUPRA there, then send tokens to the trustee address when the setup wizard displays it.
 
-**Option B**: Use the Supra CLI via Docker to create a wallet and request faucet tokens:
+**Option B**: Use the Supra CLI via Docker to create a wallet and request faucet tokens. You can follow the instructions from https://docs.supra.com/network/move/getting-started/docker and https://docs.supra.com/network/move/getting-started/supra-cli-with-docker. Once your supra cli is running you can use the following commands in the cli bash to create a new address (profile) and fund it from the faucet.
 
 ```
-docker run -it --rm asia-docker.pkg.dev/supra-devnet-misc/supra-testnet/validator-node:v6.4.0 /bin/bash -c "supra profile generate --name temp --rpc-url https://rpc-testnet.supra.com --faucet-url https://rpc-testnet.supra.com && supra move account fund-with-faucet --rpc-url https://rpc-testnet.supra.com"
+supra profile new accountA --network testnet
+supra profile activate accountA
+supra move account fund-with-faucet --rpc-url https://rpc-testnet.supra.com
 ```
 
-Either way, you will need approximately **10 SUPRA** to fund a node. Keep your wallet or CLI ready — you will need to send tokens during the next step.
+Either way, you will need at least **50 SUPRA** to fund a node. Keep your wallet or CLI ready — you will need to send tokens during the next step.
 
 ## Step 8: Run the Setup Wizard
 
@@ -189,23 +191,25 @@ docker run -it -v deadmkt-data:/data deadmkt-node deadmkt-node setup
 
 2. Press **Enter** when prompted to begin.
 
-3. **Beneficiary address**: Enter the Supra address that should receive your trading profits. If you are funding the node yourself, use your own Supra wallet address.
+3. **Node role**: The wizard asks whether this is a trading node or a bootstrap/relay node. Select **1 (Trading node)** — this is the standard choice. Bootstrap mode is only for relay operators who want to support the network without trading.
 
-4. **Keystore password**: Choose a strong password (at least 12 characters, using letters, numbers, and symbols like `!@#$%`). This password protects your node's private key. **Write it down and keep it safe. If you lose this password, you lose access to your node's funds.**
+4. **Beneficiary address**: Enter the Supra address that should receive your trading profits. If you are funding the node yourself, use your own Supra wallet address.
 
-5. **Wallet funding**: The wizard will display a trustee wallet address and wait for you to send SUPRA tokens to it. Go to your **StarKey Wallet** in Chrome (or use the Supra CLI on a headless server), make sure you are on **Testnet**, and send at least **10 SUPRA** to the displayed address. To send from StarKey: click **Send**, paste the trustee address, enter the amount, and confirm. The wizard will detect the tokens automatically and continue.
+5. **Keystore password**: Choose a strong password (at least 12 characters, using letters, numbers, and symbols like `!@#$%`). This password protects your node's private key. **Write it down and keep it safe. If you lose this password, you lose access to your node's funds.**
 
-6. **Withdrawal configuration**: The wizard will ask about exit paths:
+6. **Wallet funding**: The wizard will display a trustee wallet address and wait for you to send SUPRA tokens to it. Go to your **StarKey Wallet** in Chrome (or use the Supra CLI on a headless server), make sure you are on **Testnet**, and send at least **50 SUPRA** to the displayed address. To send from StarKey: click **Send**, paste the trustee address, enter the amount, and confirm. The wizard will detect the tokens automatically and continue.
+
+7. **Withdrawal configuration**: The wizard will ask about exit paths:
    - **Holding period**: How many days the beneficiary must wait before claiming all funds. Default is 90 days. For testing, you can use 1 day.
    - **Rushed withdrawal**: Whether the beneficiary can make partial withdrawals. Type `y` for yes.
 
-7. **Profit threshold**: The percentage above base capital before profits are swept to the beneficiary. Default is 20%. Press Enter to accept the default.
+8. **Token weighting**: The wizard asks which token you want more of — **EMM**, **KAY**, or **TEE** (default: TEE). This creates your initial trading position with a 40/30/30 split. You will trade the surplus for what you need.
 
-8. Wait for the token minting process. The wizard mints EMM, KAY, and TEE tokens from 70% of your SUPRA and deposits them into escrow. The first mint requires an 8-minute hold period — the wizard handles this automatically.
+9. Wait for the token minting process. The wizard mints EMM, KAY, and TEE tokens from 70% of your SUPRA and deposits them into escrow. The first mint requires an 8-minute hold period in testnet (Symbolic for the 8 day hold the first time in Mainnet... the wait is to discourage nft disgarding as there is no benefit to it needing to wait for a new nft... same rules apply to everyone) — the wizard handles this automatically.
 
 When you see `Setup complete!`, your node is ready.
 
-## Step 9: Start the Node
+## Step 9: Start the Trading Node (not a Bootstrap Node... see below)
 
 Replace `your_password_here` with the keystore password you chose during setup:
 
@@ -309,7 +313,7 @@ docker start deadmkt-node
 
 ### Completely remove and start fresh
 
-This deletes all node data including your keys and escrowed tokens:
+This deletes all node data including your keys (Never do this on Mainnet!!!) and escrowed tokens:
 
 ```
 docker stop deadmkt-node

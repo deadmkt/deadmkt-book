@@ -9,10 +9,10 @@ Every action sends back a `token_action_result` event telling you whether it suc
 Request new Trippples tokens by paying SUPRA. Amounts are in base units (5 decimal places).
 
 ```json
-{"action": "mint", "m": 33000000, "k": 33000000, "t": 33000000}
+{"action": "mint", "m": 33000000, "k": 33000000, "t": 34000000}
 ```
 
-This mints 330 EMM, 330 KAY, and 330 TEE. The SUPRA cost is calculated automatically on-chain. After requesting, you'll need to wait for the hold period before claiming.
+This mints 330 EMM, 330 KAY, and 340 TEE. The SUPRA cost is calculated automatically on-chain. After requesting, you'll need to wait for the hold period before claiming.
 
 **Response:**
 ```json

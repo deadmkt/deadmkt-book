@@ -8,9 +8,9 @@ A complete reference for understanding the DeadMKT decentralised batch-auction t
 
 DeadMKT is a trading protocol built on the Supra blockchain where three tokens — EMM, KAY, and TEE — trade against each other in a closed triangle. Unlike traditional exchanges where trading is optional, DeadMKT's economic design makes trading mandatory. If you hold tokens, you must trade to complete your position. If you don't trade, your tokens lose utility.
 
-The protocol uses batch auctions instead of continuous order books. Orders are submitted blind, revealed simultaneously, and matched at fair clearing prices. This eliminates front-running and creates a level playing field between sophisticated algorithms and manual traders.
+The protocol uses batch auctions instead of continuous order books. Orders are submitted blind, revealed simultaneously, and matched at fair clearing prices. This eliminates front-running and creates a level playing field between sophisticated algorithms and AI traders.
 
-Every token in DeadMKT is backed 1:1 by SUPRA (the chain's native currency). There is no inflation, no token printing, and no dilution. The only way tokens enter the system is through minting (depositing SUPRA), and the only way they leave is through burning (returning tokens for SUPRA). The treasury always holds enough SUPRA to redeem every outstanding token.
+Every token in DeadMKT is backed 1:1 by SUPRA (the chain's native currency). There is no inflation, no unbacked token printing, so no dilution. The only way tokens enter the system is through minting (depositing SUPRA), and the only way they leave is through burning (returning tokens for SUPRA). The smart contract treasury always holds enough SUPRA to redeem every outstanding token.
 
 ---
 
@@ -75,18 +75,18 @@ Batches are fast — each phase lasts only a few seconds. A complete batch cycle
 
 ### How Minting Works
 
-To enter the protocol, you deposit SUPRA and receive EMM, KAY, and TEE tokens. The exchange rate is fixed — tokens are always backed 1:1 by SUPRA in the treasury.
+To enter the protocol, you deposit SUPRA and receive EMM, KAY, and TEE tokens. The exchange rate is fixed — tokens are always backed 1:1 by SUPRA in the treasury. 1 SUPRA gets 10 tokens in a ratio you choose within the restrictions described below.
 
-When you call request_mint, you specify how much of each token you want (subject to the 3:3:4 ratio constraint and minimum quantity rules). Your SUPRA is transferred to a pending escrow, and a verifiable random dice roll (vDRF) determines how long you must wait before claiming your tokens.
+When you call request_mint, you specify how much of each token you want (subject to the 3:3:4 ratio constraint and minimum quantity rules). Your SUPRA is transferred to a pending escrow, and a verifiable random dice roll (vDRF) determines how long you must wait before claiming your tokens. This means no one person can mint quickly to exploit a situation... all agents must mint strategically.
 
 ### The vDRF Hold Period
 
 After requesting a mint, the protocol rolls a virtual dice using a verifiable random function:
 
 - **Roll 1-6**: Your tokens are held for (roll number) days. Roll 1 = 1 day, roll 6 = 6 days.
-- **Roll 7**: BLOCKED — no one can mint until the blocked period expires (minimum 6 days plus a variable amount based on how many times blocking has occurred).
+- **Roll 7**: BLOCKED — no one can mint until the blocked period expires (minimum 6 days plus a variable amount based on how many times blocking has occurred)... this allows for all timezones to have the mint start at a time convinient to them over the course of the infinite game.
 
-The first mint for any new participant has a fixed hold period (8 days on mainnet) regardless of the dice roll. This prevents rapid initial capitalisation.
+The first mint for any new participant has a fixed hold period (8 days on mainnet, symbolic 8 minutes on testnet) regardless of the dice roll. This prevents rapid initial capitalisation and nft churn as there is no benefit discarding a trading nft... you have to wait for it so you respect it.
 
 ### Why Hold Periods Matter
 
@@ -96,6 +96,7 @@ Hold periods are not just a delay mechanism — they are a strategic weapon:
 - **Long rolls tie up capital**: Your SUPRA deposit is locked until you can claim.
 - **BLOCKED periods create supply droughts**: When nobody can mint, existing token holders have pricing power.
 - **Auto-claim on re-mint**: If you request a new mint while you have an expired (claimable) pending mint, the old one is automatically claimed first. This prevents the "double hold" problem where missing a claim window wastes another full period.
+- **In an environment with a floor price**: Trading time is in itself a form of value, this makes it worth a traders time to take a small loss if they don't wish to wait or you can wait and mint your way back to floor price.
 
 ### Mint State Machine
 
@@ -128,7 +129,7 @@ There are two ways to burn tokens back to SUPRA:
 
 1. **Burn to trustee**: The SUPRA from burning goes to the trustee address (the operator). This is used for gas recovery — converting MKT tokens back to SUPRA to pay for transaction fees.
 
-2. **Burn to beneficiary**: The SUPRA goes to the beneficiary address (the owner/sponsor). This is how profits are distributed — the agent decides when it's profitable to exit a position and sends the SUPRA to the beneficiary.
+2. **Burn to beneficiary**: The SUPRA goes to the beneficiary address (the account who this node was set up to benefit). This is how profits are distributed — the agent decides when it's profitable to exit a position and sends the SUPRA to the beneficiary.
 
 Both paths require burning equal triples (same amount of all three tokens).
 
@@ -174,11 +175,14 @@ Triangle arbitrage requires trading across multiple batches (one trade per pair 
 
 ## Participants and Roles
 
+### Sponsor
+The wallet address that funds the Trustee to trade for the benefit of the beneficiary.
+
 ### Trustee
-The operator address that controls the trading account. The trustee submits orders, manages minting and burning, and pays gas fees. In an automated setup, the trustee is controlled by a trading agent (bot).
+The AI operator address that controls the trading account. The trustee submits orders, manages minting and burning, and pays gas fees. The trustee is controlled by a trading agent (bot).
 
 ### Beneficiary
-The owner or sponsor address. Receives profits from burn_to_beneficiary. Can initiate withdrawals (holding period or rushed). Does not trade directly — the trustee acts on the beneficiary's behalf.
+The beneficiary is the wallet address which the node is set up to benefit receives profits from burn_to_beneficiary. Can initiate withdrawals (holding period or rushed). Does not trade directly — the trustee acts on the beneficiary's behalf.
 
 ### NFT Identity
 Each trustee-beneficiary pair is represented by an on-chain NFT. The NFT ID is used for pool assignment, gossip identification, and counterparty tracking. NFTs are minted in pairs — one for the trustee, one for the beneficiary.
@@ -207,14 +211,14 @@ The pool system prevents the network from becoming too large for efficient match
 
 Every on-chain action costs SUPRA gas:
 
-- **Trade settlement**: Approximately 0.02 SUPRA per filled trade. A coin flip determines which counterparty pays.
-- **Heartbeat**: Approximately 0.005 SUPRA. Periodic liveness proof required to stay active.
+- **Trade settlement**: Approximately 0.02 SUPRA per filled trade. A coin flip determines which of the trading parties pays. However, there's a backstop mechanism — if the designated gas payer fails to settle within a timeout, the counterparty can submit it themselves. Both nodes compute the same match and can produce valid settlement transactions. The gas payer just gets first responsibility which it is courtesy to live up to... but if they neglect their duties the counter party can back stop the transaction which could be a lot more valueable than the gas. Consistent gas skippers are tracked and monitored.
+- **Heartbeat**: Approximately 0.005 SUPRA. Periodic liveness proof required to stay active. (This timeliness of this will be refined during testnet in consult with community)
 - **Mint request**: Approximately 0.01 SUPRA plus the SUPRA deposit for backing.
 - **Claim mint**: Approximately 0.008 SUPRA.
 - **Burn**: Approximately 0.01 SUPRA.
 - **Lock/Unlock**: Approximately 0.008 SUPRA.
 
-Gas is the real cost of participation. A 50 SUPRA balance provides roughly 1,000 batches of active trading before needing replenishment. Smart gas management — knowing when to trade actively versus when to conserve — is part of the strategic game.
+Gas is the only real cost of participation. A 50 SUPRA balance provides roughly 1,000 batches of active trading before needing replenishment. Smart gas management — knowing when to trade actively versus when to conserve — is part of the strategic game.
 
 ---
 
@@ -235,20 +239,20 @@ Understanding counterparty behaviour lets you anticipate demand. If a counterpar
 ## Withdrawal and Exit
 
 ### Holding Period
-The beneficiary can start a holding period (configurable in days). Once the period expires, the beneficiary can claim all tokens as SUPRA (all tokens are burned and SUPRA is returned).
+The beneficiary can start a holding period (configurable in days by the sponsor). Once the period expires, the beneficiary can claim all tokens as SUPRA (all tokens are burned and SUPRA is returned).
 
 ### Rushed Withdrawal
-For faster exit, the beneficiary can request a rushed withdrawal. This has a grace period (measured in batches) to allow pending settlements to clear before the account is closed.
+For faster exit, the beneficiary can request a rushed withdrawal if the sponsor has allowed it. This has a grace period (measured in batches) to allow pending settlements to clear before the account is closed.
 
 ### Safe Deregister
-Once all tokens and pending actions are cleared, the trustee can deregister from the protocol entirely, closing the escrow and removing the account.
+Once all tokens and pending actions are cleared, the beneficiary calls safe_deregister to close the escrow, then reclaims the mint bond, and finally calls burn_pair to permanently destroy both NFTs. There is a cooldown period between deregistration and burning to allow time for any violation reports to be submitted.
 
 ---
 
 ## Security Mechanisms
 
 ### Commit Violation Detection (R50)
-If a player submits more commitments than allowed per batch (the commits_per_batch limit), any other player can report the violation on-chain. The violating NFT is blocked from trading for a configurable number of batches. An admin can unblock if the report was in error.
+If a player submits more commitments than allowed per batch (the commits_per_batch limit), any other player can report the violation on-chain. The violating NFT is blocked from trading for a configurable number of batches. An admin can unblock if the report was in error. (We welcome feed back on this feature during testnet). In theory false positives should be impossible since the reporter must provide valid Ed25519 signatures proving the accused committed too many times.
 
 ### Heartbeat Enforcement
 Players must send periodic heartbeat transactions to prove their node is alive. If a player misses heartbeats beyond the timeout threshold, they are flagged as inactive. An automated sweep process checks for expired heartbeats.
@@ -261,7 +265,7 @@ All token balances are tracked on-chain in escrow accounts. The settlement contr
 ## Design Philosophy
 
 ### Forced Participation Over Optional Engagement
-Every aspect of the protocol — mint skew, burn equality, trade minimums, gas costs, heartbeat requirements — pushes participants toward active engagement. Holding tokens passively is expensive (gas costs accumulate) and unproductive (imbalanced positions cannot be exited without trading).
+Every aspect of the protocol — mint skew, burn equality, trade minimums, gas costs, heartbeat requirements — pushes participants toward active engagement. Holding tokens passively is unproductive (imbalanced positions cannot be exited without trading), it is possible and minimal amounts of gas costs could build up over time. Best to not hold EMM, KAY, TEE if you have no intention of trading them.
 
 ### Time as a Strategic Resource
 Hold periods, lock durations, BLOCKED states, and batch timing all create temporal dynamics. Patience and timing beat raw capital. A player who times their locks around BLOCKED periods and unlocks when counterparties are desperate has an edge over a player with more tokens but worse timing.

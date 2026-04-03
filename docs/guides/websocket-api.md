@@ -167,11 +167,13 @@ Respond to `reveal_start`. Usually you reveal all commits (the node does this by
 
 ### mint
 
-Request a token mint. Amounts are in base units (5 decimal places: 33000000 = 330 tokens).
+Request a token mint. Amounts are in raw units (5 decimal places: 100000 = 1 token). Amounts don't have to be equal — you can skew up to roughly 40/30/30 to top up whichever token is lowest in your escrow. The total must be divisible by 1000000 (10 tokens).
 
 ```json
-{"action": "mint", "m": 33000000, "k": 33000000, "t": 33000000}
+{"action": "mint", "m": 3600000, "k": 3200000, "t": 3200000}
 ```
+
+This mints 36 EMM, 32 KAY, and 32 TEE (100 tokens total, weighted towards EMM).
 
 ### claim_mint
 
