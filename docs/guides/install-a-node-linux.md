@@ -142,7 +142,7 @@ chmod +x build.sh
 You will see many lines of output as the software compiles. This is normal. Wait until you see:
 
 ```
-Tagged: deadmkt-node:0.1.4, deadmkt-node:latest
+Tagged: deadmkt-node:0.1.9, deadmkt-node:latest
 ```
 
 If the build fails, make sure Docker is running (`sudo systemctl status docker`) and try again.
@@ -230,7 +230,7 @@ docker logs -f deadmkt-node
 You should see output like:
 
 ```
-deadmkt-node v0.1.4
+deadmkt-node v0.1.9
 
   Network:  Testnet
   NFT ID:   1
