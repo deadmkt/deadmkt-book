@@ -355,6 +355,8 @@
     }
 
     .tx-link:hover { color: var(--accent); }
+    .nft-link { text-decoration: none; transition: opacity 0.2s; }
+    .nft-link:hover { opacity: 0.7; }
     .time-cell { color: var(--text-faint); font-size: 0.7rem; }
 
     .empty {
@@ -821,8 +823,8 @@
             html += '<td><span class="pair-tag ' + pc(t.symbol) + '">' + (t.symbol||'--') + '</span></td>';
             html += '<td class="price-cell">' + fmtPrice(t.clearing_price) + '</td>';
             html += '<td>' + fmtQty(t.base_amount) + '</td>';
-            html += '<td class="buy-cell">#' + t.buyer_nft_id + '</td>';
-            html += '<td class="sell-cell">#' + t.seller_nft_id + '</td>';
+            html += '<td class="buy-cell"><a class="nft-link buy-cell" href="/account?nft=' + t.buyer_nft_id + '">#' + t.buyer_nft_id + '</a></td>';
+            html += '<td class="sell-cell"><a class="nft-link sell-cell" href="/account?nft=' + t.seller_nft_id + '">#' + t.seller_nft_id + '</a></td>';
             html += '<td class="batch-cell">' + (t.batch_id || '--') + '</td>';
             html += '<td><a class="tx-link" href="https://testnet.suprascan.io/tx/' + (t.tx_hash||'') + '" target="_blank" rel="noopener">' + shortTx(t.tx_hash) + '</a></td>';
             html += '</tr>';
