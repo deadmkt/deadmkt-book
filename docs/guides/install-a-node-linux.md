@@ -199,13 +199,15 @@ docker run -it -v deadmkt-data:/data deadmkt-node deadmkt-node setup
 
 6. **Wallet funding**: The wizard will display a trustee wallet address and wait for you to send SUPRA tokens to it. Go to your **StarKey Wallet** in Chrome (or use the Supra CLI on a headless server), make sure you are on **Testnet**, and send at least **50 SUPRA** to the displayed address. To send from StarKey: click **Send**, paste the trustee address, enter the amount, and confirm. The wizard will detect the tokens automatically and continue.
 
-7. **Withdrawal configuration**: The wizard will ask about exit paths:
+7. **Bond Requirement**: The bond requirement is another dynamic made for players to treasure their nft... this feature is mostly for mainnet but we have kept it as a token gesture of 1 Supra in testnet that you can claim back in 30 days. You must accept this bond to proceed so press `y` and then "Enter"/"Return" to continue.
+
+8. **Withdrawal configuration**: The wizard will ask about exit paths:
    - **Holding period**: How many days the beneficiary must wait before claiming all funds. Default is 90 days. For testing, you can use 1 day.
    - **Rushed withdrawal**: Whether the beneficiary can make partial withdrawals. Type `y` for yes.
 
-8. **Token weighting**: The wizard asks which token you want more of — **EMM**, **KAY**, or **TEE** (default: TEE). This creates your initial trading position with a 40/30/30 split. You will trade the surplus for what you need.
+9. **Token weighting**: The wizard asks which token you want more of — **EMM**, **KAY**, or **TEE** (default: TEE). This creates your initial trading position with a 40/30/30 split. You will trade the surplus for what you need.
 
-9. Wait for the token minting process. The wizard mints EMM, KAY, and TEE tokens from 70% of your SUPRA and deposits them into escrow. The first mint requires an 8-minute hold period in testnet (Symbolic for the 8 day hold the first time in Mainnet... the wait is to discourage nft disgarding as there is no benefit to it needing to wait for a new nft... same rules apply to everyone) — the wizard handles this automatically.
+10. Wait for the token minting process. The wizard mints EMM, KAY, and TEE tokens from 70% of your SUPRA and deposits them into escrow. The first mint requires an 8-minute hold period in testnet (8 days in mainnet, same for everyone, no shortcuts, the game begins) — the wizard handles this automatically.
 
 When you see `Setup complete!`, your node is ready.
 
@@ -218,7 +220,7 @@ docker run -d --name deadmkt-node \
   -v deadmkt-data:/data \
   -e DEADMKT_KEYSTORE_PASSWORD='your_password_here' \
   --restart unless-stopped \
-  deadmkt-node
+  deadmkt-node:0.1.9
 ```
 
 The `--restart unless-stopped` flag means the node will automatically restart if it crashes or if the server reboots. This is recommended for servers that run 24/7.
@@ -260,7 +262,7 @@ docker run -d --name deadmkt-peer \
   -e DEADMKT_KEYSTORE_PASSWORD='your_password_here' \
   -e DEADMKT_NO_STRATEGY=1 \
   --restart unless-stopped \
-  deadmkt-node
+  deadmkt-node:0.1.9
 ```
 
 Port 9191 must be open in your firewall for other nodes to connect:
@@ -343,7 +345,7 @@ docker run -d --name deadmkt-node \
   -v /path/to/your/strategy.py:/data/strategy.py \
   -e DEADMKT_KEYSTORE_PASSWORD='your_password_here' \
   --restart unless-stopped \
-  deadmkt-node
+  deadmkt-node:0.1.9
 ```
 
 For example, if your strategy is in your home directory:
@@ -366,7 +368,7 @@ docker run -d --name deadmkt-node \
   -v deadmkt-data:/data \
   -e DEADMKT_KEYSTORE_PASSWORD='your_password_here' \
   --restart unless-stopped \
-  deadmkt-node
+  deadmkt-node:0.1.9
 ```
 
 Your data volume is preserved. The node resumes with the new binary and your existing keys and escrow.

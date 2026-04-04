@@ -173,13 +173,15 @@ docker run -it -v deadmkt-data:/data deadmkt-node deadmkt-node setup
 
 6. **Wallet funding**: The wizard will display a trustee wallet address and wait for you to send SUPRA tokens to it. Go to your **StarKey Wallet** in Chrome, make sure you are on **Testnet**, and send at least **50 SUPRA** to the displayed address. To send: click **Send** in StarKey, paste the trustee address, enter the amount, and confirm. The wizard will detect the tokens automatically and continue.
 
-7. **Withdrawal configuration**: The wizard will ask about exit paths:
+7. **Bond Requirement**: The bond requirement is another dynamic made for players to treasure their nft... this feature is mostly for mainnet but we have kept it as a token gesture of 1 Supra in testnet that you can claim back in 30 days. You must accept this bond to proceed so press `y` and then "Enter"/"Return" to continue.
+
+8. **Withdrawal configuration**: The wizard will ask about exit paths:
    - **Holding period**: How many days the beneficiary must wait before claiming all funds. Default is 90 days. For testing, you can use 1 day.
    - **Rushed withdrawal**: Whether the beneficiary can make partial withdrawals. Type `y` for yes.
 
-8. **Token weighting**: The wizard asks which token you want more of — **EMM**, **KAY**, or **TEE** (default: TEE). This creates your initial trading position with a 40/30/30 split. You will trade the surplus for what you need.
+9. **Token weighting**: The wizard asks which token you want more of — **EMM**, **KAY**, or **TEE** (default: TEE). This creates your initial trading position with a 40/30/30 split. You will trade the surplus for what you need.
 
-9. Wait for the token minting process. The wizard mints EMM, KAY, and TEE tokens from 70% of your SUPRA and deposits them into escrow. The first mint requires an 8-minute hold period — the wizard handles this automatically.
+10. Wait for the token minting process. The wizard mints EMM, KAY, and TEE tokens from 70% of your SUPRA and deposits them into escrow. The first mint requires an 8-minute hold period in testnet (8 days in mainnet, same for everyone, no shortcuts, the game begins) — the wizard handles this automatically.
 
 When you see `Setup complete!`, your node is ready.
 
@@ -188,7 +190,7 @@ When you see `Setup complete!`, your node is ready.
 Replace `your_password_here` with the keystore password you chose during setup:
 
 ```
-docker run -d --name deadmkt-node -v deadmkt-data:/data -e DEADMKT_KEYSTORE_PASSWORD='your_password_here' deadmkt-node
+docker run -d --name deadmkt-node -v deadmkt-data:/data -e DEADMKT_KEYSTORE_PASSWORD='your_password_here' --restart unless-stopped deadmkt-node:0.1.9
 ```
 
 **Important**: If your password contains special characters, wrap it in single quotes as shown above.
