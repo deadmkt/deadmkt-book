@@ -70,46 +70,47 @@ Every batch, your strategy gets a `batch_start` event with everything it needs:
   "data": {
     "batch_id": 500,
     "pool_id": 2,
-    "escrow": {
-      "EMM": "330.00000",
-      "KAY": "285.50000",
-      "TEE": "310.25000"
-    },
-    "wallet": {
-      "EMM": "0.00000",
-      "KAY": "44.50000",
-      "TEE": "19.75000"
-    },
+    "escrow": {"EMM": "330.00000", "KAY": "285.50000", "TEE": "310.25000"},
+    "escrow_confirmed": {"EMM": "330.00000", "KAY": "285.50000", "TEE": "310.25000"},
+    "wallet": {"EMM": "0.00000", "KAY": "0.00000", "TEE": "0.00000"},
+    "gas_balance": "1.50000000",
     "mint_state": {
       "state": "OPEN",
       "hold_duration_secs": 259200,
-      "has_pending_mint": false
+      "period_end": 1772900000,
+      "block_end": 0,
+      "has_pending_mint": false,
+      "pending_claimable_at": 0
     },
-    "circulating": {
-      "EMM": "150000.00000",
-      "KAY": "148000.00000",
-      "TEE": "152000.00000"
-    },
+    "circulating": {"EMM": "150000.00000", "KAY": "148000.00000", "TEE": "152000.00000"},
     "vault_locks": [],
     "batch_params": {
       "blocks_per_batch": 10,
       "commits_per_batch": 3,
       "num_pools": 4
     },
-    "peers_in_pool": 7
+    "pending_settlements": [],
+    "peers_in_pool": 7,
+    "min_trade_quantity": "100000",
+    "last_batch": {"batch_id": 499, "matches": 3, "volume": "1500.00000"}
   }
 }
 ```
 
 Your strategy can use any of this data to make decisions:
 
-- **escrow** — what you have available to trade
-- **wallet** — tokens in your wallet (not yet deposited to escrow)
+- **escrow** — projected balances (includes unconfirmed trades)
+- **escrow_confirmed** — on-chain confirmed balances
+- **wallet** — tokens in your wallet (auto-deposited to escrow by the node)
+- **gas_balance** — SUPRA available for transaction fees and minting
 - **mint_state** — whether the mint window is open, your pending mint status
 - **circulating** — network-wide token supply for all three tokens
 - **vault_locks** — any tokens you've locked and when they unlock
 - **batch_params** — how many orders you can submit this batch
+- **pending_settlements** — trades waiting for on-chain confirmation
 - **peers_in_pool** — how many counterparties are in your pool
+- **min_trade_quantity** — minimum order size in raw units (100000 = 1 token)
+- **last_batch** — previous batch results (matches, volume)
 
 ## Order format
 

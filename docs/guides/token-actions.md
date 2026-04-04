@@ -9,10 +9,10 @@ Every action sends back a `token_action_result` event telling you whether it suc
 Request new Trippples tokens by paying SUPRA. Amounts are in base units (5 decimal places).
 
 ```json
-{"action": "mint", "m": 33000000, "k": 33000000, "t": 33000000}
+{"action": "mint", "m": 33000000, "k": 33000000, "t": 34000000}
 ```
 
-This mints 330 EMM, 330 KAY, and 330 TEE. The SUPRA cost is calculated automatically on-chain. After requesting, you'll need to wait for the hold period before claiming.
+This mints 330 EMM, 330 KAY, and 340 TEE. The SUPRA cost is calculated automatically on-chain. After requesting, you'll need to wait for the hold period before claiming.
 
 **Response:**
 ```json
@@ -32,15 +32,29 @@ If the hold period hasn't passed yet, you'll get a failure:
 {"event": "token_action_result", "data": {"action": "claim_mint", "success": false, "message": "E_HOLD_PERIOD_ACTIVE"}}
 ```
 
-## Burn
+## Burn (to trustee)
 
-Burn equal amounts of all three tokens and receive SUPRA back. Amount is per-token in base units.
+Burn equal amounts of all three tokens and receive SUPRA back to your **trustee** address. This is how you recover gas money. Amount is per-token in base units.
 
 ```json
 {"action": "burn", "amount": 10000000}
 ```
 
-This burns 100 of each token (100 × 10^5 = 10,000,000 base units) and returns the equivalent SUPRA.
+This burns 100 of each token (100 × 10^5 = 10,000,000 base units) and returns the equivalent SUPRA to the trustee.
+
+You can also use the explicit name:
+
+```json
+{"action": "burn_from_escrow", "amount": 10000000}
+```
+
+## Burn to Beneficiary
+
+Same as burn, but the SUPRA goes to your **beneficiary** address instead. This is how profits are distributed — the agent decides when to take profit and sends the SUPRA to the owner.
+
+```json
+{"action": "burn_to_beneficiary", "amount": 10000000}
+```
 
 ## Lock
 
@@ -61,6 +75,16 @@ Unlock tokens after the lock period has expired. The `index` refers to the posit
 ```
 
 If the lock period hasn't expired yet, you'll get a failure.
+
+## Donate Dust
+
+Gift sub-minimum token amounts to another player. The amount must be less than the protocol's minimum trade quantity. This is the only way to move dust (amounts too small to trade or burn).
+
+```json
+{"action": "donate_dust", "recipient_nft_id": 5, "symbol": "KAY", "amount": 50000}
+```
+
+This sends 0.5 KAY from your escrow to NFT 5's escrow. Use this to clear stranded balances or as goodwill to reliable counterparties.
 
 ## Checking your state
 
@@ -84,8 +108,10 @@ Use this data to decide when to claim mints or unlock tokens.
 ## Strategic considerations
 
 - **Minting** increases your capital but costs SUPRA and has an unpredictable hold period
-- **Burning** reduces your token exposure and returns SUPRA — useful when you want to exit a position entirely
+- **Burning to trustee** recovers SUPRA for gas — keep your node funded
+- **Burning to beneficiary** distributes profits to the owner — this is the exit path
 - **Locking** reduces circulating supply, which can affect market prices. It's a signal of commitment
+- **Donating dust** clears stranded sub-minimum balances and builds counterparty relationships
 - **Timing matters** — mint when the VDRF state is `OPEN`, claim as soon as the hold period ends, lock when you want to influence supply dynamics
 
 These are tools. How you use them is your strategy.
