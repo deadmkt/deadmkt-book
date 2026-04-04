@@ -1,0 +1,754 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>DeadMKT — Account</title>
+  <meta name="description" content="Account overview for a DeadMKT trading node.">
+  <link rel="icon" type="image/svg+xml" href="https://deadmkt.com/favicon.svg">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #050508;
+      --bg-card: #0a0a10;
+      --bg-row: #08080e;
+      --bg-row-alt: #0b0b14;
+      --border: #151520;
+      --text: #d4d4dc;
+      --text-dim: #6a6a7a;
+      --text-faint: #3a3a4a;
+      --green: #22c55e;
+      --red: #ef4444;
+      --green-glow: rgba(34, 197, 94, 0.06);
+      --accent: #6366f1;
+      --mono: 'JetBrains Mono', monospace;
+      --sans: 'DM Sans', -apple-system, sans-serif;
+      --emm-kay: #818cf8;
+      --kay-tee: #22d3ee;
+      --tee-emm: #facc15;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--sans);
+      min-height: 100vh;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    body::after {
+      content: '';
+      position: fixed;
+      inset: 0;
+      opacity: 0.015;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+      pointer-events: none;
+      z-index: 100;
+    }
+
+    .page { max-width: 1100px; margin: 0 auto; padding: 2rem 1.5rem; }
+
+    .header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 2rem;
+      padding-bottom: 1rem;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .header h1 {
+      font-family: var(--mono);
+      font-size: 1.1rem;
+      font-weight: 500;
+      color: var(--text);
+      letter-spacing: -0.02em;
+    }
+
+    .header h1 span { color: var(--green); }
+
+    .header-links {
+      display: flex;
+      gap: 1.2rem;
+      font-size: 0.8rem;
+    }
+
+    .header-links a {
+      color: var(--text-dim);
+      text-decoration: none;
+      font-family: var(--mono);
+      transition: color 0.2s;
+    }
+
+    .header-links a:hover { color: var(--text); }
+
+    .status-bar {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      margin-bottom: 2rem;
+      font-family: var(--mono);
+      font-size: 0.75rem;
+      color: var(--text-dim);
+    }
+
+    .status-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--text-faint);
+      transition: background 0.3s;
+    }
+
+    .status-dot.live { background: var(--green); box-shadow: 0 0 6px var(--green); }
+    .status-dot.active { background: var(--green); box-shadow: 0 0 6px var(--green); }
+    .status-dot.inactive { background: var(--red); box-shadow: 0 0 6px var(--red); }
+    .status-dot.error { background: var(--red); }
+
+    /* Identity bar */
+    .identity {
+      display: flex;
+      align-items: center;
+      gap: 1.5rem;
+      margin-bottom: 2rem;
+      padding: 1rem 1.2rem;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+    }
+
+    .identity-nft {
+      font-family: var(--mono);
+      font-size: 1.8rem;
+      font-weight: 600;
+      color: var(--green);
+    }
+
+    .identity-details {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .identity-label {
+      font-family: var(--mono);
+      font-size: 0.65rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--text-faint);
+      margin-bottom: 0.2rem;
+    }
+
+    .identity-addr {
+      font-family: var(--mono);
+      font-size: 0.8rem;
+      color: var(--text-dim);
+      cursor: pointer;
+      transition: color 0.2s;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .identity-addr:hover { color: var(--text); }
+
+    .identity-status {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-family: var(--mono);
+      font-size: 0.75rem;
+    }
+
+    /* Balance cards */
+    .balances {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 1px;
+      background: var(--border);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      overflow: hidden;
+      margin-bottom: 2rem;
+    }
+
+    .balance-card {
+      background: var(--bg-card);
+      padding: 1rem 1.2rem;
+    }
+
+    .balance-label {
+      font-family: var(--mono);
+      font-size: 0.65rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--text-faint);
+      margin-bottom: 0.4rem;
+    }
+
+    .balance-label.emm { color: var(--emm-kay); }
+    .balance-label.kay { color: var(--kay-tee); }
+    .balance-label.tee { color: var(--tee-emm); }
+
+    .balance-value {
+      font-family: var(--mono);
+      font-size: 1.3rem;
+      font-weight: 500;
+      color: var(--text);
+    }
+
+    .balance-value.gas { color: var(--text-dim); }
+
+    /* Stats */
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      gap: 1px;
+      background: var(--border);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      overflow: hidden;
+      margin-bottom: 2rem;
+    }
+
+    .stat {
+      background: var(--bg-card);
+      padding: 1rem 1.2rem;
+    }
+
+    .stat-label {
+      font-family: var(--mono);
+      font-size: 0.65rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--text-faint);
+      margin-bottom: 0.4rem;
+    }
+
+    .stat-value {
+      font-family: var(--mono);
+      font-size: 1.3rem;
+      font-weight: 500;
+      color: var(--text);
+    }
+
+    .stat-value.green { color: var(--green); }
+
+    /* Trade table */
+    .trades-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 0.8rem;
+    }
+
+    .trades-header h2 {
+      font-family: var(--mono);
+      font-size: 0.8rem;
+      font-weight: 500;
+      color: var(--text-dim);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
+
+    .trades-header .count {
+      font-family: var(--mono);
+      font-size: 0.7rem;
+      color: var(--text-faint);
+    }
+
+    .trade-table {
+      width: 100%;
+      border-collapse: collapse;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      overflow: hidden;
+    }
+
+    .trade-table th {
+      font-family: var(--mono);
+      font-size: 0.65rem;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--text-faint);
+      text-align: left;
+      padding: 0.6rem 0.8rem;
+      background: var(--bg-card);
+      border-bottom: 1px solid var(--border);
+    }
+
+    .trade-table td {
+      font-family: var(--mono);
+      font-size: 0.78rem;
+      padding: 0.55rem 0.8rem;
+      border-bottom: 1px solid var(--border);
+      color: var(--text-dim);
+    }
+
+    .trade-table tr:nth-child(even) td { background: var(--bg-row-alt); }
+    .trade-table tr:nth-child(odd) td { background: var(--bg-row); }
+    .trade-table tr:hover td { background: var(--bg-card); }
+    .trade-table tr.new-trade td { animation: flash 1.5s ease-out; }
+
+    @keyframes flash {
+      0% { background: rgba(34, 197, 94, 0.12); }
+      100% { background: transparent; }
+    }
+
+    .pair-tag {
+      display: inline-block;
+      padding: 0.15rem 0.4rem;
+      border-radius: 3px;
+      font-size: 0.7rem;
+      font-weight: 500;
+      border: 1px solid var(--border);
+    }
+
+    .pair-tag.emm-kay { border-color: #4f46e5; color: var(--emm-kay); }
+    .pair-tag.kay-tee { border-color: #0891b2; color: var(--kay-tee); }
+    .pair-tag.tee-emm { border-color: #ca8a04; color: var(--tee-emm); }
+
+    .price-cell { color: var(--text); font-weight: 500; }
+    .buy-cell { color: var(--green); }
+    .sell-cell { color: var(--red); }
+    .side-tag { font-weight: 500; }
+    .side-tag.bought { color: var(--green); }
+    .side-tag.sold { color: var(--red); }
+    .batch-cell { color: var(--text-faint); font-size: 0.7rem; }
+
+    .tx-link {
+      color: var(--text-faint);
+      text-decoration: none;
+      font-size: 0.7rem;
+      transition: color 0.2s;
+    }
+
+    .tx-link:hover { color: var(--accent); }
+    .time-cell { color: var(--text-faint); font-size: 0.7rem; }
+
+    .empty {
+      text-align: center;
+      padding: 3rem;
+      color: var(--text-faint);
+      font-family: var(--mono);
+      font-size: 0.85rem;
+    }
+
+    .waiting { display: inline-block; animation: pulse 2s ease-in-out infinite; }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 0.4; }
+      50% { opacity: 1; }
+    }
+
+    .footer {
+      margin-top: 3rem;
+      padding-top: 1rem;
+      border-top: 1px solid var(--border);
+      font-family: var(--mono);
+      font-size: 0.7rem;
+      color: var(--text-faint);
+      display: flex;
+      justify-content: space-between;
+    }
+
+    .footer a { color: var(--text-dim); text-decoration: none; }
+    .footer a:hover { color: var(--text); }
+    .footer .footer-links { display: flex; gap: 1.2rem; }
+    .footer .footer-links a { color: var(--text-dim); text-decoration: none; font-family: var(--mono); font-size: 0.7rem; }
+    .footer .footer-links a:hover { color: var(--text); }
+
+    @media (max-width: 700px) {
+      .balances { grid-template-columns: repeat(2, 1fr); }
+      .stats { grid-template-columns: repeat(2, 1fr); }
+      .identity { flex-direction: column; align-items: flex-start; gap: 0.8rem; }
+      .trade-table th:nth-child(6),
+      .trade-table td:nth-child(6),
+      .trade-table th:nth-child(7),
+      .trade-table td:nth-child(7) { display: none; }
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+
+    <div class="header">
+      <h1>dead<span>MKT</span> // account</h1>
+      <div class="header-links">
+        <a href="/">home</a>
+        <a href="/trades">trades</a>
+        <a href="/docs/">docs</a>
+        <a href="https://github.com/deadmkt">github</a>
+        <a href="https://x.com/DeadMKT">X</a>
+      </div>
+    </div>
+
+    <div class="status-bar">
+      <div class="status-dot" id="statusDot"></div>
+      <span id="statusText">loading...</span>
+    </div>
+
+    <div class="identity" id="identityBar">
+      <div class="identity-nft" id="nftId">--</div>
+      <div class="identity-details">
+        <div class="identity-label">Trustee Address</div>
+        <div class="identity-addr" id="trusteeAddr" title="Click to copy">--</div>
+      </div>
+      <div class="identity-status">
+        <div class="status-dot" id="activeDot"></div>
+        <span id="activeText">--</span>
+      </div>
+    </div>
+
+    <div class="balances">
+      <div class="balance-card">
+        <div class="balance-label emm">EMM</div>
+        <div class="balance-value" id="balEMM">--</div>
+      </div>
+      <div class="balance-card">
+        <div class="balance-label kay">KAY</div>
+        <div class="balance-value" id="balKAY">--</div>
+      </div>
+      <div class="balance-card">
+        <div class="balance-label tee">TEE</div>
+        <div class="balance-value" id="balTEE">--</div>
+      </div>
+      <div class="balance-card">
+        <div class="balance-label">SUPRA (gas)</div>
+        <div class="balance-value gas" id="balGas">--</div>
+      </div>
+    </div>
+
+    <div class="stats">
+      <div class="stat">
+        <div class="stat-label">Total Trades</div>
+        <div class="stat-value" id="totalTrades">--</div>
+      </div>
+      <div class="stat">
+        <div class="stat-label">As Buyer</div>
+        <div class="stat-value green" id="asBuyer">--</div>
+      </div>
+      <div class="stat">
+        <div class="stat-label">As Seller</div>
+        <div class="stat-value" id="asSeller">--</div>
+      </div>
+      <div class="stat">
+        <div class="stat-label">Volume</div>
+        <div class="stat-value" id="totalVolume">--</div>
+      </div>
+      <div class="stat">
+        <div class="stat-label">Last Active</div>
+        <div class="stat-value" id="lastSeen">--</div>
+      </div>
+    </div>
+
+    <div class="trades-header">
+      <h2>Trade History</h2>
+      <span class="count" id="tradeCount"></span>
+    </div>
+
+    <table class="trade-table">
+      <thead>
+        <tr>
+          <th>Time</th>
+          <th>Pair</th>
+          <th>Side</th>
+          <th>Price</th>
+          <th>Quantity</th>
+          <th>Counterparty</th>
+          <th>Batch</th>
+          <th>Tx</th>
+        </tr>
+      </thead>
+      <tbody id="tradeBody">
+        <tr><td colspan="8" class="empty"><span class="waiting">loading trades...</span></td></tr>
+      </tbody>
+    </table>
+
+    <div class="footer">
+      <span>DeadMKT Testnet</span>
+      <span>Refreshes every 10s</span>
+      <div class="footer-links">
+        <a href="/">home</a>
+        <a href="/trades">trades</a>
+        <a href="/docs/">docs</a>
+        <a href="/docs/manifesto">manifesto</a>
+      </div>
+    </div>
+
+  </div>
+
+  <script>
+    var API = 'https://idx-testnet.deadmkt.com';
+    var RPC = 'https://rpc-testnet.supra.com';
+    var CONTRACT = '0xbe4d78eccce81356eea0aae067ba75d38fd8749225dd0c4837f11c349fedf009';
+    var DEC = 5;
+    var PDEC = 8;
+    var PRICE_DISPLAY = 5;
+    var SUPRA_DEC = 8;
+    var POLL_TRADES = 5000;
+    var POLL_CHAIN = 10000;
+
+    // Token metadata addresses (from chain)
+    var TOKEN_META = {
+      EMM: '0x6cdc1443df675b6af78deb1459a01af72a4f75341638964586cd7e753c6a70d9',
+      KAY: '0x749fe753e4dfd122da6311c951c4145f3c3c0a5767c1bd354167d164afc2a133',
+      TEE: '0x65fe95983a3b26a017534c31af727356497ccdfd2845c3ab458820533b0d8aac',
+    };
+
+    var nftId = null;
+    var trusteeAddr = null;
+    var prevFirst = null;
+
+    // ── Parse query params ─────────────────────────────────────────
+    function init() {
+      var params = new URLSearchParams(window.location.search);
+      nftId = params.get('nft');
+      trusteeAddr = params.get('addr');
+
+      if (!nftId && !trusteeAddr) {
+        document.getElementById('nftId').textContent = '?';
+        setStatus('error', 'no nft or address specified');
+        document.getElementById('tradeBody').innerHTML = '<tr><td colspan="8" class="empty">Use /account?nft=5 or click an NFT ID on the <a href="/trades" style="color:var(--accent)">trades page</a></td></tr>';
+        return;
+      }
+
+      if (nftId) {
+        document.getElementById('nftId').textContent = '#' + nftId;
+        document.title = 'DeadMKT — NFT #' + nftId;
+      }
+
+      pollChain();
+      pollTrades();
+      setInterval(pollChain, POLL_CHAIN);
+      setInterval(pollTrades, POLL_TRADES);
+    }
+
+    // ── Formatting ─────────────────────────────────────────────────
+    function fmtBal(raw) {
+      if (raw == null) return '--';
+      return (Number(raw) / Math.pow(10, DEC)).toFixed(DEC);
+    }
+
+    function fmtGas(raw) {
+      if (raw == null) return '--';
+      return (Number(raw) / Math.pow(10, SUPRA_DEC)).toFixed(2);
+    }
+
+    function fmtPrice(raw) {
+      if (raw == null || raw === 0) return '--';
+      return (Number(raw) / Math.pow(10, PDEC)).toFixed(PRICE_DISPLAY);
+    }
+
+    function fmtQty(raw) {
+      if (raw == null) return '--';
+      return (Number(raw) / Math.pow(10, DEC)).toFixed(DEC);
+    }
+
+    function fmtVol(raw) {
+      if (raw == null) return '--';
+      var v = Number(raw) / 1e5;
+      return v >= 1e6 ? (v/1e6).toFixed(1)+'M' : v >= 1e3 ? (v/1e3).toFixed(1)+'K' : v.toFixed(2);
+    }
+
+    function fmtTime(ts) {
+      if (!ts) return '--';
+      return new Date(Number(ts) * 1000).toLocaleTimeString('en-US', {hour12:false, hour:'2-digit', minute:'2-digit', second:'2-digit'});
+    }
+
+    function fmtDate(ts) {
+      if (!ts) return '--';
+      var d = new Date(Number(ts) * 1000);
+      return d.toLocaleDateString('en-US', {month:'short', day:'numeric'}) + ' ' + d.toLocaleTimeString('en-US', {hour12:false, hour:'2-digit', minute:'2-digit'});
+    }
+
+    function shortTx(h) {
+      if (!h) return '--';
+      var c = h.startsWith('0x') ? h.slice(2) : h;
+      return c.slice(0,8) + '..';
+    }
+
+    function shortAddr(a) {
+      if (!a) return '--';
+      return a.slice(0,8) + '...' + a.slice(-6);
+    }
+
+    function pc(s) {
+      return s === 'EMM/KAY' ? 'emm-kay' : s === 'KAY/TEE' ? 'kay-tee' : s === 'TEE/EMM' ? 'tee-emm' : '';
+    }
+
+    function setStatus(s, t) {
+      document.getElementById('statusDot').className = 'status-dot ' + s;
+      document.getElementById('statusText').textContent = t;
+    }
+
+    // ── Chain RPC view call ────────────────────────────────────────
+    async function viewCall(module, fn, args) {
+      var resp = await fetch(RPC + '/rpc/v1/view', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          function: CONTRACT + '::' + module + '::' + fn,
+          type_arguments: [],
+          arguments: args,
+        }),
+      });
+      if (!resp.ok) throw new Error('RPC error: ' + resp.status);
+      var data = await resp.json();
+      return data.result;
+    }
+
+    // ── Resolve trustee address from NFT ID ──────────────────────
+    async function resolveTrustee() {
+      if (trusteeAddr) return;
+      if (!nftId) return;
+      try {
+        var result = await viewCall('nft', 'get_trustee_address', [nftId]);
+        if (result && result[0]) {
+          trusteeAddr = result[0];
+          document.getElementById('trusteeAddr').textContent = trusteeAddr;
+          document.getElementById('trusteeAddr').title = trusteeAddr + ' (click to copy)';
+        }
+      } catch(e) { /* will retry next poll */ }
+    }
+
+    // ── Poll chain (balances, active status) ───────────────────────
+    async function pollChain() {
+      if (!nftId) return;
+      try {
+        // Resolve trustee address if we don't have it yet
+        await resolveTrustee();
+
+        // Fetch balances for each token
+        var results = await Promise.all([
+          viewCall('escrow', 'get_balance', [nftId, TOKEN_META.EMM]),
+          viewCall('escrow', 'get_balance', [nftId, TOKEN_META.KAY]),
+          viewCall('escrow', 'get_balance', [nftId, TOKEN_META.TEE]),
+          viewCall('escrow', 'is_active', [nftId]),
+          viewCall('escrow', 'get_last_activity', [nftId]),
+        ]);
+
+        document.getElementById('balEMM').textContent = fmtBal(results[0][0]);
+        document.getElementById('balKAY').textContent = fmtBal(results[1][0]);
+        document.getElementById('balTEE').textContent = fmtBal(results[2][0]);
+
+        var isActive = results[3][0];
+        var activeDot = document.getElementById('activeDot');
+        var activeText = document.getElementById('activeText');
+        activeDot.className = 'status-dot ' + (isActive ? 'active' : 'inactive');
+        activeText.textContent = isActive ? 'active' : 'inactive';
+        activeText.style.color = isActive ? 'var(--green)' : 'var(--red)';
+
+        var lastActivity = results[4][0];
+        document.getElementById('lastSeen').textContent = fmtDate(lastActivity);
+        document.getElementById('lastSeen').style.fontSize = '0.85rem';
+
+        // Fetch gas balance if we have the trustee address
+        if (trusteeAddr) {
+          try {
+            var gasResp = await fetch(RPC + '/rpc/v1/view', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                function: '0x1::coin::balance',
+                type_arguments: ['0x1::supra_coin::SupraCoin'],
+                arguments: [trusteeAddr],
+              }),
+            });
+            if (gasResp.ok) {
+              var gasData = await gasResp.json();
+              if (gasData.result && gasData.result[0] != null) {
+                document.getElementById('balGas').textContent = fmtGas(gasData.result[0]);
+              }
+            }
+          } catch(e) { /* gas balance is optional */ }
+        }
+
+        setStatus('live', 'connected to chain');
+      } catch(e) {
+        setStatus('error', 'chain RPC error');
+      }
+    }
+
+    // ── Poll trades (from indexer) ─────────────────────────────────
+    async function pollTrades() {
+      if (!nftId) return;
+      try {
+        // Fetch recent trades and filter client-side
+        var trResp = await fetch(API + '/api/trades?limit=500');
+        if (!trResp.ok) throw new Error('indexer error');
+        var trData = await trResp.json();
+        var allTrades = trData.trades || [];
+
+        // Filter to trades involving this NFT
+        var myTrades = allTrades.filter(function(t) {
+          return t.buyer_nft_id == nftId || t.seller_nft_id == nftId;
+        });
+
+        // Compute stats from filtered trades
+        var asBuyer = 0, asSeller = 0, totalVol = 0;
+        for (var i = 0; i < myTrades.length; i++) {
+          if (myTrades[i].buyer_nft_id == nftId) asBuyer++;
+          else asSeller++;
+          totalVol += myTrades[i].base_amount || 0;
+        }
+        document.getElementById('totalTrades').textContent = myTrades.length;
+        document.getElementById('asBuyer').textContent = asBuyer;
+        document.getElementById('asSeller').textContent = asSeller;
+        document.getElementById('totalVolume').textContent = fmtVol(totalVol);
+
+        document.getElementById('tradeCount').textContent = myTrades.length + ' shown';
+
+        var tbody = document.getElementById('tradeBody');
+        if (!myTrades.length) {
+          tbody.innerHTML = '<tr><td colspan="8" class="empty">no trades found for this node</td></tr>';
+        } else {
+          var newFirst = myTrades[0].trade_id;
+          var hasNew = prevFirst && newFirst !== prevFirst;
+          var html = '';
+          for (var i = 0; i < myTrades.length; i++) {
+            var t = myTrades[i];
+            var isBuyer = t.buyer_nft_id == nftId;
+            var flash = hasNew && i === 0;
+            var counterparty = isBuyer ? t.seller_nft_id : t.buyer_nft_id;
+
+            html += '<tr' + (flash ? ' class="new-trade"' : '') + '>';
+            html += '<td class="time-cell">' + fmtTime(t.timestamp) + '</td>';
+            html += '<td><span class="pair-tag ' + pc(t.symbol) + '">' + (t.symbol||'--') + '</span></td>';
+            html += '<td><span class="side-tag ' + (isBuyer ? 'bought' : 'sold') + '">' + (isBuyer ? 'bought' : 'sold') + '</span></td>';
+            html += '<td class="price-cell">' + fmtPrice(t.clearing_price) + '</td>';
+            html += '<td>' + fmtQty(t.base_amount) + '</td>';
+            html += '<td><a href="/account?nft=' + counterparty + '" style="color:var(--text-dim);text-decoration:none">#' + counterparty + '</a></td>';
+            html += '<td class="batch-cell">' + (t.batch_id || '--') + '</td>';
+            html += '<td><a class="tx-link" href="https://testnet.suprascan.io/tx/' + (t.tx_hash||'') + '" target="_blank" rel="noopener">' + shortTx(t.tx_hash) + '</a></td>';
+            html += '</tr>';
+          }
+          tbody.innerHTML = html;
+          prevFirst = newFirst;
+        }
+      } catch(e) {
+        /* keep existing data on error */
+      }
+    }
+
+    // ── Copy address on click ──────────────────────────────────────
+    document.getElementById('trusteeAddr').addEventListener('click', function() {
+      if (trusteeAddr) {
+        navigator.clipboard.writeText(trusteeAddr).then(function() {
+          var el = document.getElementById('trusteeAddr');
+          var orig = el.textContent;
+          el.textContent = 'copied!';
+          el.style.color = 'var(--green)';
+          setTimeout(function() { el.textContent = orig; el.style.color = ''; }, 1500);
+        });
+      }
+    });
+
+    // ── Init ───────────────────────────────────────────────────────
+    init();
+  </script>
+</body>
+</html>

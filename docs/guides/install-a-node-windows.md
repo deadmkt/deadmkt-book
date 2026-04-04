@@ -118,7 +118,7 @@ Run the build script:
 You will see many lines of output as the software compiles. This is normal. Wait until you see:
 
 ```
-Tagged: deadmkt-node:0.1.4, deadmkt-node:latest
+Tagged: deadmkt-node:0.1.9, deadmkt-node:latest
 ```
 
 If the build fails, make sure Docker Desktop is running (whale icon in your system tray) and try again.
@@ -165,19 +165,23 @@ docker run -it -v deadmkt-data:/data deadmkt-node deadmkt-node setup
 
 2. Press **Enter** when prompted to begin.
 
-3. **Beneficiary address**: Enter the Supra address that should receive your trading profits. If you are funding the node yourself, use your own Supra wallet address.
+3. **Node role**: The wizard asks whether this is a trading node or a bootstrap/relay node. Select **1 (Trading node)** — this is the standard choice. Bootstrap mode is only for relay operators who want to support the network without trading.
 
-4. **Keystore password**: Choose a strong password (at least 12 characters, using letters, numbers, and symbols like `!@#$%`). This password protects your node's private key. **Write it down and keep it safe. If you lose this password, you lose access to your node's funds.**
+4. **Beneficiary address**: Enter the Supra address that should receive your trading profits. If you are funding the node yourself, use your own Supra wallet address.
 
-5. **Wallet funding**: The wizard will display a trustee wallet address and wait for you to send SUPRA tokens to it. Go to your **StarKey Wallet** in Chrome, make sure you are on **Testnet**, and send at least **10 SUPRA** to the displayed address. To send: click **Send** in StarKey, paste the trustee address, enter the amount, and confirm. The wizard will detect the tokens automatically and continue.
+5. **Keystore password**: Choose a strong password (at least 12 characters, using letters, numbers, and symbols like `!@#$%`). This password protects your node's private key. **Write it down and keep it safe. If you lose this password, you lose access to your node's funds.**
 
-6. **Withdrawal configuration**: The wizard will ask about exit paths:
+6. **Wallet funding**: The wizard will display a trustee wallet address and wait for you to send SUPRA tokens to it. Go to your **StarKey Wallet** in Chrome, make sure you are on **Testnet**, and send at least **50 SUPRA** to the displayed address. To send: click **Send** in StarKey, paste the trustee address, enter the amount, and confirm. The wizard will detect the tokens automatically and continue.
+
+7. **Bond Requirement**: The bond requirement is another dynamic made for players to treasure their nft... this feature is mostly for mainnet but we have kept it as a token gesture of 1 Supra in testnet that you can claim back in 30 days. You must accept this bond to proceed so press `y` and then "Enter"/"Return" to continue.
+
+8. **Withdrawal configuration**: The wizard will ask about exit paths:
    - **Holding period**: How many days the beneficiary must wait before claiming all funds. Default is 90 days. For testing, you can use 1 day.
    - **Rushed withdrawal**: Whether the beneficiary can make partial withdrawals. Type `y` for yes.
 
-7. **Profit threshold**: The percentage above base capital before profits are swept to the beneficiary. Default is 20%. Press Enter to accept the default.
+9. **Token weighting**: The wizard asks which token you want more of — **EMM**, **KAY**, or **TEE** (default: TEE). This creates your initial trading position with a 40/30/30 split. You will trade the surplus for what you need.
 
-8. Wait for the token minting process. The wizard mints EMM, KAY, and TEE tokens from 70% of your SUPRA and deposits them into escrow. The first mint requires an 8-minute hold period — the wizard handles this automatically.
+10. Wait for the token minting process. The wizard mints EMM, KAY, and TEE tokens from 70% of your SUPRA and deposits them into escrow. The first mint requires an 8-minute hold period in testnet (8 days in mainnet, same for everyone, no shortcuts, the game begins) — the wizard handles this automatically.
 
 When you see `Setup complete!`, your node is ready.
 
@@ -186,7 +190,7 @@ When you see `Setup complete!`, your node is ready.
 Replace `your_password_here` with the keystore password you chose during setup:
 
 ```
-docker run -d --name deadmkt-node -v deadmkt-data:/data -e DEADMKT_KEYSTORE_PASSWORD='your_password_here' deadmkt-node
+docker run -d --name deadmkt-node -v deadmkt-data:/data -e DEADMKT_KEYSTORE_PASSWORD='your_password_here' --restart unless-stopped deadmkt-node:0.1.9
 ```
 
 **Important**: If your password contains special characters, wrap it in single quotes as shown above.
@@ -202,7 +206,7 @@ docker logs -f deadmkt-node
 You should see output like:
 
 ```
-deadmkt-node v0.1.4
+deadmkt-node v0.1.9
 
   Network:  Testnet
   NFT ID:   1
