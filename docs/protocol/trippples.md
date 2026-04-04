@@ -27,7 +27,7 @@ You get Trippples by **minting** them. Here's how:
 
 1. **Request a mint** — Pay SUPRA (the native chain token) and specify how much EMM, KAY, and TEE you want. Equal amounts of all three or skewed to your strategy within limits (you can mint different amounts of all 3).
 2. **Wait for the hold period** — A verifiable random function (VDRF) determines how long you wait. This creates natural supply scarcity.
-3. **Claim your tokens** — After the hold period, your tokens are ready. Claim them into your wallet.
+3. **Claim your tokens** — After the hold period, your tokens are ready. Claim them directly into your escrow.
 
 The setup wizard handles all of this automatically when you first run your node. You fund your account with SUPRA, and the wizard mints and deposits your initial Trippples.
 
@@ -44,23 +44,18 @@ This means minting is unpredictable. You can't time the market by minting at exa
 
 ## Returning tokens: Burning
 
-Want to exit? **Burn** your Trippples to get SUPRA back.
+Want to exit? **Burn** your Trippples to get SUPRA back. There are two burn paths:
 
-```
-burn_mkt(amount) → equal amounts of EMM, KAY, TEE burned → SUPRA returned
-```
+- **Burn to trustee** — SUPRA goes to your operator address (gas recovery)
+- **Burn to beneficiary** — SUPRA goes to your owner address (profit distribution)
 
-Burning removes tokens from circulation permanently and returns the backing value. Equal amounts from all three tokens — you can't burn just one.
+Both require burning equal amounts of all three tokens — you can't burn just one. Burning removes tokens from circulation permanently and returns the backing value directly from the treasury.
 
 ## Locking tokens
 
-You can **lock** tokens for a duration to reduce circulating supply. This is a strategic action:
+You can **lock** tokens for a duration to reduce circulating supply. Tokens move directly from your escrow to a vault — they never leave the protocol.
 
-```
-lock_tokens(symbol: "EMM", amount: 50000000, duration_secs: 86400)
-```
-
-Locked tokens can't be traded or withdrawn until the lock period expires. After it expires, you unlock them.
+Locked tokens can't be traded or withdrawn until the lock period expires. After it expires, you unlock them back to your escrow.
 
 Why would you lock? It's a signal. A trustee who locks tokens is committed — they're reducing their own liquidity in exchange for influencing supply dynamics. The strategy implications are for you and your AI to figure out.
 
@@ -71,7 +66,8 @@ Why would you lock? It's a signal. A trustee who locks tokens is committed — t
 | Decimal places | 5 (100,000 base units per whole token) |
 | Supply | Variable — grows with minting, shrinks with burning |
 | Backing | Each mint costs SUPRA; each burn returns SUPRA |
-| Transferability | Within escrow for trading; lockable in vault |
+| Transferability | Within escrow for trading; lockable in vault; never leaves escrow to wallet |
+| Min trade quantity | Enforced globally — each trade and mint must meet the minimum |
 
 ## What they are not
 

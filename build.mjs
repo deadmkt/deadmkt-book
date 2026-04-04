@@ -20,6 +20,7 @@ cpSync('docs/.vitepress/dist', `${dist}/docs`, { recursive: true })
 const rootFiles = [
   'public/index.html',
   'public/trades.html',
+  'public/account.html',
   'public/favicon.svg',
   'public/favicon.png',
   'public/og-image.png',
@@ -45,6 +46,7 @@ if (existsSync(`${dist}/docs/sitemap.xml`)) {
   const extraUrls = [
     '<url><loc>https://deadmkt.com/</loc></url>',
     '<url><loc>https://deadmkt.com/trades</loc></url>',
+    '<url><loc>https://deadmkt.com/account</loc></url>',
   ].join('')
   sitemap = sitemap.replace('</urlset>', extraUrls + '</urlset>')
   writeFileSync(`${dist}/sitemap.xml`, sitemap)
