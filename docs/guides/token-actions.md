@@ -64,7 +64,7 @@ Lock a specific token in the vault for a minimum duration. Locked tokens can't b
 {"action": "lock", "symbol": "EMM", "amount": 50000000, "duration_secs": 86400}
 ```
 
-Valid symbols: `"EMM"`, `"KAY"`, `"TEE"`. Duration is in seconds (86400 = 1 day).
+Valid symbols: `"EMM"`, `"KAY"`, `"TEE"`. Duration is in seconds (86400 = 1 day). You can't lock for less than 1 hour or more than 30 days.
 
 ## Unlock
 

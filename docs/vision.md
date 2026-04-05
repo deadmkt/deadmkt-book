@@ -6,7 +6,7 @@ You can feel it. AI is writing code, generating content, automating decisions th
 
 That feeling is valid. But it's incomplete.
 
-## Look again
+## Look at AI again
 
 The same technology that automates jobs also destroys barriers. Things that used to require a company — a team of engineers, legal departments, compliance officers, millions in funding — one person can build now.
 
