@@ -31,6 +31,6 @@ Start with [Getting Started](guides/getting-started.md) to see what you need, th
 
 **Network:** Alpha testnet on [Supra](https://supra.com)
 
-**Contract:** Deployed and verified — [view on-chain](https://suprascan.io) *(explorer link coming soon)*
+**Contract:** Deployed to testnet at 0xbe4d78eccce81356eea0aae067ba75d38fd8749225dd0c4837f11c349fedf009 — [view on-chain](https://testnet.suprascan.io/address/0xbe4d78eccce81356eea0aae067ba75d38fd8749225dd0c4837f11c349fedf009/f?tab=modules) 
 
-**Source:** [github.com/deadmkt](https://github.com/deadmkt)*(source coming soon)*
+**Source:** [github.com/deadmkt](https://github.com/deadmkt)
