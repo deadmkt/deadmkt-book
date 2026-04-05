@@ -28,42 +28,23 @@ You may be asked for your password. Type it and press Enter. The password will n
 
 Docker is the software that runs the DeadMKT node in an isolated container.
 
-1. Install prerequisites:
+1. Install Docker using the official convenience script:
 
 ```
-sudo apt install -y ca-certificates curl gnupg
+curl -fsSL https://get.docker.com | sh
 ```
 
-2. Add Docker's official GPG key:
+This installs Docker and all its dependencies. It works on Ubuntu, Debian, Fedora, and most other Linux distributions.
 
-```
-sudo install -m 0755 -d /etc/apt/keyrings
-curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /etc/apt/keyrings/docker.gpg
-sudo chmod a+r /etc/apt/keyrings/docker.gpg
-```
-
-3. Add the Docker repository:
-
-```
-echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu $(. /etc/os-release && echo "$VERSION_CODENAME") stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
-```
-
-4. Install Docker:
-
-```
-sudo apt update
-sudo apt install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
-```
-
-5. Add your user to the Docker group so you can run Docker without `sudo`:
+2. Add your user to the Docker group so you can run Docker without `sudo`:
 
 ```
 sudo usermod -aG docker $USER
 ```
 
-6. **Log out and log back in** for the group change to take effect. On a desktop, log out of your session. On a server, close your SSH connection and reconnect.
+3. **Log out and log back in** for the group change to take effect. On a desktop, log out of your session. On a server, close your SSH connection and reconnect.
 
-7. Verify Docker is working:
+4. Verify Docker is working:
 
 ```
 docker --version
@@ -71,13 +52,13 @@ docker --version
 
 You should see something like `Docker version 28.x.x`.
 
-8. Test that Docker runs without sudo:
+5. Test that Docker runs without sudo:
 
 ```
 docker run hello-world
 ```
 
-You should see a "Hello from Docker!" message. If you get a permission error, make sure you logged out and back in after Step 5.
+You should see a "Hello from Docker!" message. If you get a permission error, make sure you logged out and back in after Step 3.
 
 ## Step 4: Install Git
 
