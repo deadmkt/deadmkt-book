@@ -31,7 +31,7 @@ You get Trippples by **minting** them. Here's how:
 
 The setup wizard handles all of this automatically when you first run your node. You fund your account with SUPRA, and the wizard mints and deposits your initial Trippples.
 
-### The VDRF roll
+### The dVRF roll
 
 The hold period isn't fixed — it's determined by a random roll:
 
