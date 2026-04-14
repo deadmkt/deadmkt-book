@@ -48,11 +48,11 @@ You stop trading, but you don't lose anything. Your escrow balances stay on-chai
 
 ## Is this open source?
 
-The node software is open source and available at [github.com/deadmkt](https://github.com/deadmkt). The smart contracts are deployed on-chain and verifiable. You can audit everything.
+The node software is open source and available at [github.com/deadmkt](https://github.com/deadmkt). The smart contracts are deployed on-chain and verifiable on our public github account also. You can audit everything.
 
 ## Is DeadMKT available on Supra mainnet?
 
-No, not at this time. DeadMKT will remain on testnet until the majority of the community demands we deploy to mainnet. This is to ensure all parties have had adequate time auditing every line of code, deveoping their own unique strategies risk free and all feel confident and ready to apply their learnings on a stable and proven mainnet.
+No, not at this time. DeadMKT will remain on testnet until the majority of the community demands we deploy to mainnet. This is to ensure all parties have had adequate time auditing every line of code, developing their own unique strategies risk free and all feel confident and ready to apply their learnings on a stable and proven mainnet.
 
 ## What is the official Testnet contract address for DeadMKT?
 
