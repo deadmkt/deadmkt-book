@@ -740,15 +740,17 @@
         var tradesUrl = API + '/trades?limit=200';
         if (pair !== 'all') tradesUrl += '&pair=' + encodeURIComponent(pair);
 
-        var [sr, tr, mr] = await Promise.all([
+        var [sr, tr, mr, ar] = await Promise.all([
           fetch(API + '/stats'),
           fetch(tradesUrl),
           fetch(API + '/markets'),
+          fetch(API + '/trustees/active?minutes=10'),
         ]);
         if (!sr.ok || !tr.ok) throw new Error('api');
         var stats = await sr.json();
         var tradeData = await tr.json();
         var marketData = mr.ok ? await mr.json() : { markets: [] };
+        var activeData = ar.ok ? await ar.json() : null;
 
         var allTrades = tradeData.trades || [];
 
@@ -757,13 +759,19 @@
         document.getElementById('totalVolume').textContent = fmtVol(stats.total_volume);
         document.getElementById('lastBlock').textContent = stats.last_indexed_block || '--';
 
-        // Active nodes: count distinct NFT IDs from recent trades
-        var nftIds = {};
-        for (var i = 0; i < allTrades.length; i++) {
-          nftIds[allTrades[i].buyer_nft_id] = true;
-          nftIds[allTrades[i].seller_nft_id] = true;
+        // Active nodes: heartbeat-live trustees from indexer (v0.2.3+).
+        // Fall back to the old trade-history dedupe if the endpoint isn't
+        // available (older indexer deployments).
+        if (activeData && typeof activeData.count === 'number') {
+          document.getElementById('activeNodes').textContent = activeData.count;
+        } else {
+          var nftIds = {};
+          for (var i = 0; i < allTrades.length; i++) {
+            nftIds[allTrades[i].buyer_nft_id] = true;
+            nftIds[allTrades[i].seller_nft_id] = true;
+          }
+          document.getElementById('activeNodes').textContent = Object.keys(nftIds).length;
         }
-        document.getElementById('activeNodes').textContent = Object.keys(nftIds).length;
 
         // Active markets from /api/markets
         var markets = marketData.markets || [];
