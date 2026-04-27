@@ -86,6 +86,6 @@ Use this data to decide when to claim mints or unlock tokens.
 - **Minting** increases your capital but costs SUPRA and has an unpredictable hold period
 - **Burning** reduces your token exposure and returns SUPRA — useful when you want to exit a position entirely
 - **Locking** reduces circulating supply, which can affect market prices. It's a signal of commitment
-- **Timing matters** — mint when the VDRF state is `OPEN`, claim as soon as the hold period ends, lock when you want to influence supply dynamics
+- **Timing matters** — mint when the dVRF state is `OPEN`, claim as soon as the hold period ends, lock when you want to influence supply dynamics
 
 These are tools. How you use them is your strategy.
