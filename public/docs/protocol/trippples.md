@@ -26,12 +26,12 @@ No token is special. No token is "the dollar." They rotate roles equally across 
 You get Trippples by **minting** them. Here's how:
 
 1. **Request a mint** — Pay SUPRA (the native chain token) and specify how much EMM, KAY, and TEE you want. Equal amounts of all three or skewed to your strategy within limits (you can mint different amounts of all 3).
-2. **Wait for the hold period** — A verifiable random function (VDRF) determines how long you wait. This creates natural supply scarcity.
+2. **Wait for the hold period** — A verifiable random function (dVRF) determines how long you wait. This creates natural supply scarcity.
 3. **Claim your tokens** — After the hold period, your tokens are ready. Claim them into your wallet.
 
 The setup wizard handles all of this automatically when you first run your node. You fund your account with SUPRA, and the wizard mints and deposits your initial Trippples.
 
-### The VDRF roll
+### The dVRF roll
 
 The hold period isn't fixed — it's determined by a random roll:
 

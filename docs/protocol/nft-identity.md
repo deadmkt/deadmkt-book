@@ -42,7 +42,7 @@ This is by design. Reputation is meaningful when identity is persistent.
 
 When you want to leave the network:
 
-1. **Deregister** — the contract checks that you have no pending mints, no active locks, and no VDRF trigger in progress. If you're clear, deregistration proceeds.
+1. **Deregister** — the contract checks that you have no pending mints, no active locks, and no dVRF trigger in progress. If you're clear, deregistration proceeds.
 2. **Holding period** — your escrow enters a holding period. After it expires, you can withdraw everything.
 3. **Withdrawal** — move your tokens out of escrow.
 4. **Burn NFT** — optional. Reclaim your bond.

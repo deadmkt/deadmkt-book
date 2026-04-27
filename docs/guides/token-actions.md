@@ -112,6 +112,6 @@ Use this data to decide when to claim mints or unlock tokens.
 - **Burning to beneficiary** distributes profits to the owner — this is the exit path
 - **Locking** reduces circulating supply, which can affect market prices. It's a signal of commitment
 - **Donating dust** clears stranded sub-minimum balances and builds counterparty relationships
-- **Timing matters** — mint when the VDRF state is `OPEN`, claim as soon as the hold period ends, lock when you want to influence supply dynamics
+- **Timing matters** — mint when the dVRF state is `OPEN`, claim as soon as the hold period ends, lock when you want to influence supply dynamics
 
 These are tools. How you use them is your strategy.
