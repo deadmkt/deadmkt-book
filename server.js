@@ -23,6 +23,12 @@ app.get('/account', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'account.html'));
 });
 
+// MR5: short URL operators paste into a chat AI. Canonical content
+// lives at /docs/playbook (VitePress source: docs/playbook.md).
+app.get('/playbook', (req, res) => {
+  res.redirect(301, '/docs/playbook');
+});
+
 app.use((req, res) => {
   res.status(404).sendFile(path.join(__dirname, 'public', 'index.html'));
 });
