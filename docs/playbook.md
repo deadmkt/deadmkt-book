@@ -198,28 +198,32 @@ All withdrawals are SUPRA-only -- the protocol does not let raw tokens out to a 
 
 DMKT13+ adds a permissionless individual NFT burn-exit. Where `withdraw` paths drain tokens but keep the trading identity, `burn-pair` retires the NFT itself. The sponsor gets a time-decayed refund of their membership deposit; the beneficiary gets the leftover-token-burn-to-SUPRA proceeds; both NFTs are destroyed.
 
-**The refund formula (rev4):**
+**The refund formula (rev5):**
 
 ```
 if N_active_before_burn == 1:
-    refund = entire treasury_balance     # last-NFT carve-out
+    refund = entire treasury_balance     # last-NFT carve-out (uncapped)
 else:
-    nominal  = max(0, mint_fee - (tenure_secs * 50 / 30_days))
-    pro_rata = treasury_balance / N_active_before_burn
-    refund   = min(nominal, pro_rata)
+    max_refund = mint_fee * max_refund_bps / 10_000      # rev5: 95% cap
+    decay      = tenure_secs * decay_per_period / decay_period_secs
+    nominal    = max(0, max_refund - decay)
+    pro_rata   = treasury_balance / N_active_before_burn
+    refund     = min(nominal, pro_rata)
 ```
 
-At the AOE5 defaults (mint_fee=1,000 SUPRA, 50 SUPRA decay per 30 days), nominal refunds look like:
+At the AOE5 defaults (mint_fee=1,000 SUPRA, max_refund_bps=9500, 50 SUPRA decay per 30 days), nominal refunds look like:
 
 | Tenure | nominal (refund cap) |
 |---|---|
-| Day 0 | 1,000 (no loss) |
-| Day 15 | 975 (2.5% loss) |
-| Day 30 | 950 (5%) |
-| Day 90 | 850 (15%) |
-| Day 180 | 700 (30%) |
-| Day 365 | ~390 (~61%) |
-| Day 600+ (20+ months) | 0 |
+| Day 0 | 950 (5% loss) |
+| Day 15 | 925 (7.5%) |
+| Day 30 | 900 (10%) |
+| Day 90 | 800 (20%) |
+| Day 180 | 650 (35%) |
+| Day 365 | ~340 (~66%) |
+| Day 570+ (~19 months) | 0 |
+
+**Why even day 0 loses 5%:** rev5 added `max_refund_bps` to make NFT flipping unprofitable. The curve starts at 950 SUPRA (= mint_fee × 95%) instead of 1,000, so a same-block mint-and-burn costs the sponsor at least 50 SUPRA regardless of tenure. Decay starts subtracting from there.
 
 **Bootstrap lockout:** during the first 24 hours of a new cohort (any time N transitions from 0 to 1), burns are blocked until either 5 NFTs exist OR the 24-hour grace window expires. This protects donor-bootstrap from arbitrage.
 
