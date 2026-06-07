@@ -227,6 +227,31 @@ At the AOE5 defaults (mint_fee=1,000 SUPRA, max_refund_bps=9500, 50 SUPRA decay 
 
 **Bootstrap lockout:** during the first 24 hours of a new cohort (any time N transitions from 0 to 1), burns are blocked until either 5 NFTs exist OR the 24-hour grace window expires. This protects donor-bootstrap from arbitrage.
 
+### Before you execute: flatten to avoid stranding {#drain-before-exit}
+
+`execute_burn_pair` burns only the equal `min(EMM, KAY, TEE)` triple to SUPRA, then destroys both NFTs. **Any surplus above that equal triple is forfeited** -- once the NFT is destroyed it cannot be recovered (and `withdraw claim-all` / `rushed` also burn only the equal triple, so they cannot rescue it either). So flatten your escrow toward equal balances *before* you exit.
+
+Check balances first:
+
+```bash
+docker exec -it deadmkt-node deadmkt-node status --json
+# read .escrow -> { emm, kay, tee }
+```
+
+Then drain the surplus, highest balance down toward the lowest:
+
+1. **Take the bulk as profit.** `burn --to beneficiary --amount <min_of_the_three>` burns that many of *each* token to SUPRA in your beneficiary wallet, without destroying the NFT:
+   ```bash
+   docker exec -it deadmkt-node deadmkt-node burn --to beneficiary --amount 3000 --json
+   ```
+2. **Trade the still-tradeable remainder.** Anything at or above `min_trade_quantity` can still be sold on the market -- let your trading agent run (it sells the over-weighted token toward flat) or place the orders yourself. This is the only way to move a *single* token's surplus; the operator CLI cannot place trades.
+3. **Donate the sub-minimum dust.** Whatever is left below `min_trade_quantity` is too small to trade -- donate it to another NFT's escrow via `donate_dust` (a strategy/agent WebSocket action; the CLI does not expose it).
+4. **Confirm** balances are ~equal (or zero) via `status --json`, then run the three-step burn below.
+
+**Worked example** (`min_trade_quantity = 1000`): escrow holds EMM 3000, KAY 3100, TEE 4000. Burn the equal triple (3000 each) for profit -> EMM 0, KAY 100, TEE 1000. Trade away the 1000 TEE (at the minimum, still tradeable). Donate the 100 KAY dust (below the minimum). Nothing remains to strand -> burn cleanly.
+
+If you skip this, `execute_burn_pair` still succeeds -- you simply forfeit the unequal surplus. The protocol never hands it to anyone else; it just becomes unrecoverable once the NFT is destroyed.
+
 ### Three-step flow
 
 1. **Beneficiary requests burn** -- signs `exits::request_burn_pair(nft_id)` from the beneficiary wallet (NOT the trustee, NOT via the node CLI). This sets a flag; there is no cancel.
