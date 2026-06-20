@@ -8,12 +8,23 @@ This playbook is one page so a chat AI can hold the whole thing in context. If t
 
 DeadMKT is a decentralized order-matching market for three tokens (EMM, KAY, TEE) backed by SUPRA in a treasury. Anyone can run a node. Each node holds an NFT (the trading identity), keeps tokens in escrow, and submits orders into batch auctions every few seconds. Matched trades settle on-chain. The protocol has no broker, no central matching engine, no counterparty risk on the operator side.
 
-A node has two addresses:
+A node has three addresses (DMKT13+; was two prior):
 
-- **Trustee** -- the keystore-derived address that signs orders. Lives on the operator's server. Loses it = loses the NFT.
+- **Trustee** -- the keystore-derived address that signs orders. Lives on the operator's server. Loses it = loses the NFT identity.
 - **Beneficiary** -- a separate Supra wallet the operator already controls. Receives all profit takeouts. The trustee key cannot move funds out of the protocol; only the beneficiary can.
+- **Sponsor** -- the capital provider. Funded the NFT mint and receives the membership refund when the NFT is later burned via `burn-pair`. Stored immutably at mint time.
 
-On a "self-funded" node trustee == beneficiary (the simple case). The operator picks the beneficiary address at setup.
+On a "self-funded" node trustee == beneficiary == sponsor (one address, the simple case). On mainnet best-practice setups, all three are distinct: cold sponsor wallet, hot trustee keystore on the VPS, cold beneficiary wallet. Cold/hot key separation -- if the trustee is compromised, capital and yield are still safe.
+
+### Your three addresses {#your-three-addresses}
+
+| Role | Wallet type | What it signs | What it receives |
+|---|---|---|---|
+| Sponsor | Cold (no hot signing) | `mint_pair` once at setup | Time-decayed refund when NFT burns |
+| Trustee | Hot (on VPS) | Orders, commits, reveals, settles, heartbeats | Nothing long-term (operational key) |
+| Beneficiary | Cold (no hot signing) | `request_burn_pair`, `claim_all_as_supra`, `rushed_withdrawal_as_supra` | Profit distributions, leftover-token-burn-to-SUPRA at exit |
+
+The setup wizard asks for the beneficiary first, then the sponsor (default = trustee). On mainnet the wizard warns if `sponsor == trustee`.
 
 ## Setup (one-liner installer) {#setup}
 
@@ -182,6 +193,135 @@ docker exec -it deadmkt-node deadmkt-node withdraw rushed --json
 The grace clock gives the node's in-flight matches time to settle before exit. Cancel with `withdraw cancel-rushed`.
 
 All withdrawals are SUPRA-only -- the protocol does not let raw tokens out to a wallet. Tokens are burned at the contract; SUPRA flows to the beneficiary.
+
+## Exiting the protocol via burn-pair {#exiting}
+
+DMKT13+ adds a permissionless individual NFT burn-exit. Where `withdraw` paths drain tokens but keep the trading identity, `burn-pair` retires the NFT itself. The sponsor gets a time-decayed refund of their membership deposit; the beneficiary gets the leftover-token-burn-to-SUPRA proceeds; both NFTs are destroyed.
+
+**The refund formula (rev5):**
+
+```
+if N_active_before_burn == 1:
+    refund = entire treasury_balance     # last-NFT carve-out (uncapped)
+else:
+    max_refund = mint_fee * max_refund_bps / 10_000      # rev5: 95% cap
+    decay      = tenure_secs * decay_per_period / decay_period_secs
+    nominal    = max(0, max_refund - decay)
+    pro_rata   = treasury_balance / N_active_before_burn
+    refund     = min(nominal, pro_rata)
+```
+
+At the AOE5 defaults (mint_fee=1,000 SUPRA, max_refund_bps=9500, 50 SUPRA decay per 30 days), nominal refunds look like:
+
+| Tenure | nominal (refund cap) |
+|---|---|
+| Day 0 | 950 (5% loss) |
+| Day 15 | 925 (7.5%) |
+| Day 30 | 900 (10%) |
+| Day 90 | 800 (20%) |
+| Day 180 | 650 (35%) |
+| Day 365 | ~340 (~66%) |
+| Day 570+ (~19 months) | 0 |
+
+**Why even day 0 loses 5%:** rev5 added `max_refund_bps` to make NFT flipping unprofitable. The curve starts at 950 SUPRA (= mint_fee × 95%) instead of 1,000, so a same-block mint-and-burn costs the sponsor at least 50 SUPRA regardless of tenure. Decay starts subtracting from there.
+
+**Bootstrap lockout:** during the first 24 hours of a new cohort (any time N transitions from 0 to 1), burns are blocked until either 5 NFTs exist OR the 24-hour grace window expires. This protects donor-bootstrap from arbitrage.
+
+### Before you execute: flatten to avoid stranding {#drain-before-exit}
+
+`execute_burn_pair` burns only the equal `min(EMM, KAY, TEE)` triple to SUPRA, then destroys both NFTs. **Any surplus above that equal triple is forfeited** -- once the NFT is destroyed it cannot be recovered (and `withdraw claim-all` / `rushed` also burn only the equal triple, so they cannot rescue it either). So flatten your escrow toward equal balances *before* you exit.
+
+Check balances first:
+
+```bash
+docker exec -it deadmkt-node deadmkt-node status --json
+# read .escrow -> { emm, kay, tee }
+```
+
+Then drain the surplus, highest balance down toward the lowest:
+
+1. **Take the bulk as profit.** `burn --to beneficiary --amount <min_of_the_three>` burns that many of *each* token to SUPRA in your beneficiary wallet, without destroying the NFT:
+   ```bash
+   docker exec -it deadmkt-node deadmkt-node burn --to beneficiary --amount 3000 --json
+   ```
+2. **Trade the still-tradeable remainder.** Anything at or above `min_trade_quantity` can still be sold on the market -- let your trading agent run (it sells the over-weighted token toward flat) or place the orders yourself. This is the only way to move a *single* token's surplus; the operator CLI cannot place trades.
+3. **Donate the sub-minimum dust.** Whatever is left below `min_trade_quantity` is too small to trade -- donate it to another NFT's escrow via `donate_dust` (a strategy/agent WebSocket action; the CLI does not expose it).
+4. **Confirm** balances are ~equal (or zero) via `status --json`, then run the three-step burn below.
+
+**Worked example** (`min_trade_quantity = 1000`): escrow holds EMM 3000, KAY 3100, TEE 4000. Burn the equal triple (3000 each) for profit -> EMM 0, KAY 100, TEE 1000. Trade away the 1000 TEE (at the minimum, still tradeable). Donate the 100 KAY dust (below the minimum). Nothing remains to strand -> burn cleanly.
+
+If you skip this, `execute_burn_pair` still succeeds -- you simply forfeit the unequal surplus. The protocol never hands it to anyone else; it just becomes unrecoverable once the NFT is destroyed.
+
+### Three-step flow
+
+1. **Beneficiary requests burn** -- signs `exits::request_burn_pair(nft_id)` from the beneficiary wallet (NOT the trustee, NOT via the node CLI). This sets a flag; there is no cancel.
+2. **Preview the refund** -- read-only, anyone can call:
+   ```bash
+   docker exec -it deadmkt-node deadmkt-node burn-pair preview --json
+   ```
+   Returns the refund amount in raw SUPRA + human-readable form. Reflects bootstrap lockout (returns 0 if locked) + last-NFT carve-out + time-decay + pro-rata cap.
+3. **Trustee executes** -- signs `exits::execute_burn_pair(nft_id)` from the trustee keystore. Picks an idle moment (no pending commits, no in-flight settlements). If the trustee has been reaped (heartbeat sweep marked it inactive), anyone can execute -- "death-of-parent" safety valve.
+
+### Operator gas budget for execute
+
+The execute transaction pays gas from the trustee wallet (not from the protocol treasury). Keep at least ~20 SUPRA in the trustee balance through the exit. If the trustee is gas-broke, the sponsor can briefly top up the trustee wallet, or wait for the heartbeat sweep to mark the trustee inactive and use the fallback path from any funded address.
+
+### What gets destroyed, what gets returned
+
+| Resource | What happens at execute |
+|---|---|
+| TrusteeNFT | Destroyed (soulbound resource removed) |
+| BeneficiaryNFT object | Destroyed (object deleted via Move object framework) |
+| Escrow EMM/KAY/TEE balances | Burned for SUPRA (sent to beneficiary) |
+| WithdrawalConfig | Removed |
+| live_nft_count | Decremented |
+| Treasury share | min(decayed_nominal, pro_rata) sent to sponsor |
+
+## Monitoring protocol health {#monitoring}
+
+DMKT13+ exposes two on-chain signals operators should watch:
+
+**Treasury low balance (AOE9).** When ops_treasury drops below the configured threshold (default 17,280 SUPRA = 60 days of automation runway), the contract emits `TreasuryLowBalance`. When it recovers above the threshold, `TreasuryRecovered`. Only fires on transitions; no spam.
+
+Read current state via the indexer:
+
+```bash
+curl -s https://idx-testnet.deadmkt.com/api/treasury-health | jq
+```
+
+Response:
+
+```json
+{
+  "is_currently_low": false,
+  "last_low_balance_event": null,
+  "last_recovered_event": { "block_height": 12345, "data": {...} },
+  "recent_donations_received": [...],
+  "recent_donations_rejected": [...],
+  "recent_dvrf_funded": [...],
+  "recent_owner_topped": [...]
+}
+```
+
+**Burn-exit lifecycle.** Watch `/api/burn-exits` for who is exiting:
+
+```bash
+curl -s https://idx-testnet.deadmkt.com/api/burn-exits | jq
+```
+
+Each `BurnExecuted` carries:
+- `refund_supra` -- what the sponsor received
+- `nominal_refund` -- what the time-decay formula said before the pro-rata cap
+- `is_last_nft` -- true if the carve-out fired (sponsor got the entire treasury)
+- `is_fallback` -- true if the trustee was reaped and a third-party executed
+- `treasury_before`, `treasury_after`, `active_nfts_before_burn`
+
+**Permissionless top-ups.** Anyone (no special role) can keep the protocol running by calling:
+
+- `ops_treasury::fund_dvrf_subscription` -- when the dVRF subscription balance falls below the framework's minimum, top up by 1,000 SUPRA from ops_treasury.
+- `ops_treasury::top_up_automation_owner` -- when the automation owner's SUPRA balance falls below 10,000, top up by 10,000 from ops_treasury.
+
+Both are triple-gated (no drain path). Operators don't need to call these manually -- routine watchers / the burn-exit operator scripts can do it. But anyone with gas can.
 
 ## Connecting an agent {#agent}
 
