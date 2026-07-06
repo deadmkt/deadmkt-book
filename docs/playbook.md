@@ -198,20 +198,20 @@ All withdrawals are SUPRA-only -- the protocol does not let raw tokens out to a 
 
 ## Exiting the protocol via burn {#exiting}
 
-DeadMKT has a permissionless individual NFT burn-exit. Where `withdraw` paths drain tokens but keep the trading identity, the burn retires the NFT itself. The sponsor gets a time-decayed refund of their membership deposit; the payout address gets the leftover-token-burn-to-SUPRA proceeds; the trustee NFT is destroyed.
+DeadMKT has a permissionless individual NFT burn-exit. Where `withdraw` paths drain tokens but keep the trading identity, the burn retires the NFT itself. The sponsor gets a time-decayed refund of their membership deposit; the payout address gets the **entire escrow remainder converted to SUPRA at the fixed peg** -- balanced or not, nothing is stranded (hardening pass, 2026-07); the trustee NFT is destroyed.
 
 > **DMKT14 change:** this was a two-step `request_burn_pair` (beneficiary) -> `execute_burn_pair` (trustee) flow. With the beneficiary NFT gone, it is now a *single* trustee-signed call, `burn_trustee_nft(nft_id, recipient)`, where `recipient` is the payout address.
 
-**The refund formula (rev5):**
+**The refund formula (rev5 + hardening):** `N` below is the **unburned** NFT count (`total_minted - burned`), not the live/heartbeat count -- a reaped or deregistered NFT still counts toward N until it is actually burned.
 
 ```
-if N_active_before_burn == 1:
+if N_unburned_before_burn == 1:
     refund = entire treasury_balance     # last-NFT carve-out (uncapped)
 else:
     max_refund = mint_fee * max_refund_bps / 10_000      # rev5: 95% cap
     decay      = tenure_secs * decay_per_period / decay_period_secs
     nominal    = max(0, max_refund - decay)
-    pro_rata   = treasury_balance / N_active_before_burn
+    pro_rata   = treasury_balance / N_unburned_before_burn
     refund     = min(nominal, pro_rata)
 ```
 
@@ -227,47 +227,36 @@ At the AOE5 defaults (mint_fee=1,000 SUPRA, max_refund_bps=9500, 50 SUPRA decay 
 | Day 365 | ~340 (~66%) |
 | Day 570+ (~19 months) | 0 |
 
-**Why even day 0 loses 5%:** rev5 added `max_refund_bps` to make NFT flipping unprofitable. The curve starts at 950 SUPRA (= mint_fee × 95%) instead of 1,000, so a same-block mint-and-burn costs the sponsor at least 50 SUPRA regardless of tenure. Decay starts subtracting from there.
+**Why even day 0 loses 5%:** rev5 added `max_refund_bps` to make NFT flipping unprofitable. The curve starts at 950 SUPRA (= mint_fee * 95%) instead of 1,000, so a same-block mint-and-burn costs the sponsor at least 50 SUPRA regardless of tenure. Decay starts subtracting from there.
 
-**Bootstrap lockout:** during the first 24 hours of a new cohort (any time N transitions from 0 to 1), burns are blocked until either 5 NFTs exist OR the 24-hour grace window expires. This protects donor-bootstrap from arbitrage.
+**Bootstrap lockout:** no burns within the first 24 hours of a new cohort (any time the unburned count transitions from 0 to 1), unconditionally -- the window is purely time-based (the old "5 NFTs clears it early" escape was removed in the hardening pass). This protects donor-bootstrap from arbitrage.
 
-### Before you execute: flatten to avoid stranding {#drain-before-exit}
+### No flattening needed: the burn converts everything {#full-conversion}
 
-`burn_trustee_nft` burns only the equal `min(EMM, KAY, TEE)` triple to SUPRA, then destroys the NFT. **Any surplus above that equal triple is forfeited** -- once the NFT is destroyed it cannot be recovered (and `withdraw claim-all` / `rushed` also burn only the equal triple, so they cannot rescue it either). So flatten your escrow toward equal balances *before* you exit.
+The terminal burn converts the **entire** escrow remainder per-token at the fixed peg (1 token unit = 100 SUPRA quants) -- imbalanced remainders are NOT forfeited. (Before the 2026-07 hardening pass the burn only converted the equal `min(EMM, KAY, TEE)` triple and stranded the surplus; if an older guide tells you to flatten balances before exiting, it is out of date.) The everyday `withdraw claim-all` / `rushed` paths still burn only equal triples -- full conversion happens exclusively inside `burn_trustee_nft`.
 
-Check balances first:
+### When can you burn? The exit gates {#exit-gates}
 
-```bash
-docker exec -it deadmkt-node deadmkt-node status --json
-# read .escrow -> { emm, kay, tee }
-```
+`burn_trustee_nft` checks, in order -- and `burn-pair preview` reports the first gate that would fail:
 
-Then drain the surplus, highest balance down toward the lowest:
-
-1. **Take the bulk as profit.** `burn --to payout --amount <min_of_the_three>` burns that many of *each* token to SUPRA in your payout wallet, without destroying the NFT:
-   ```bash
-   docker exec -it deadmkt-node deadmkt-node burn --to payout --amount 3000 --json
-   ```
-2. **Trade the still-tradeable remainder.** Anything at or above `min_trade_quantity` can still be sold on the market -- let your trading agent run (it sells the over-weighted token toward flat) or place the orders yourself. This is the only way to move a *single* token's surplus; the operator CLI cannot place trades.
-3. **Donate the sub-minimum dust.** Whatever is left below `min_trade_quantity` is too small to trade -- donate it to another NFT's escrow via `donate_dust` (a strategy/agent WebSocket action; the CLI does not expose it).
-4. **Confirm** balances are ~equal (or zero) via `status --json`, then run the three-step burn below.
-
-**Worked example** (`min_trade_quantity = 1000`): escrow holds EMM 3000, KAY 3100, TEE 4000. Burn the equal triple (3000 each) for profit -> EMM 0, KAY 100, TEE 1000. Trade away the 1000 TEE (at the minimum, still tradeable). Donate the 100 KAY dust (below the minimum). Nothing remains to strand -> burn cleanly.
-
-If you skip this, the burn still succeeds -- you simply forfeit the unequal surplus. The protocol never hands it to anyone else; it just becomes unrecoverable once the NFT is destroyed.
+1. **Not already burned.**
+2. **Bootstrap lockout** -- the 24h cohort window above.
+3. **Blocked-NFT rule** -- an NFT blocked by a commit-violation report is frozen only during the enforcement grace window; once enforcement is active it may exit like anyone else (its cost is the freeze, the refund decay, and the mint fee to re-enter -- never confiscation).
+4. **Quiet period** -- you must not have participated in a settlement within the last `REPORT_WINDOW_BATCHES` batches (hours-scale). This is the same window in which commit-violation reports are accepted, so nobody can burn while a report against them could still land. **Stopping signing starts the clock:** a counterparty can settle your still-valid signed commitments (refreshing your stamp) for up to `settlement_max_age` batches after you sign them, so the worst-case voluntary exit delay is: wait out any unexpired lock, then `settlement_max_age` of re-stamp exposure, then the quiet window. Heartbeats and deposits do NOT reset the quiet clock -- you can stay alive while clocking toward exit.
+5. **No pending token-layer state** -- no unclaimed pending mint, not the current dVRF trigger, no *unexpired* lock (expired-but-unclaimed locks are drained into the conversion automatically; a live lock is waited out, never broken).
 
 ### Single-call flow
 
-1. **Preview the refund** -- read-only, anyone can call:
+1. **Preview** -- read-only, anyone can call:
    ```bash
    docker exec -it deadmkt-node deadmkt-node burn-pair preview --json
    ```
-   Returns the refund amount in raw SUPRA + human-readable form. Reflects bootstrap lockout (returns 0 if locked) + last-NFT carve-out + time-decay + pro-rata cap.
-2. **Trustee burns** -- signs `exits::burn_trustee_nft(nft_id, recipient)` from the trustee keystore (the node passes the configured `payout_address` as `recipient`). Pick an idle moment (no pending commits, no in-flight settlements):
+   Returns the refund amount + the first failing exit gate (if any). Reflects bootstrap lockout, the quiet period, blocked-grace, pending state, last-NFT carve-out, time-decay and the pro-rata cap.
+2. **Trustee burns** -- signs `exits::burn_trustee_nft(nft_id, recipient)` from the trustee keystore (the node passes the configured `payout_address` as `recipient`):
    ```bash
    docker exec -it deadmkt-node deadmkt-node burn-pair execute --json
    ```
-   If the trustee has been reaped (heartbeat sweep marked it inactive), anyone can call it -- the "death-of-parent" safety valve. On that fallback path the supplied recipient is ignored and the token-burn SUPRA goes to the on-chain trustee address, so a third-party executor can never redirect it.
+   If the trustee is **abandoned** -- past every self-recovery window (inactivity + the 2-day reactivate grace for registered members; 30 days from mint for never-registered ones) -- anyone can call it: the "death-of-parent" safety valve. On that fallback path the supplied recipient is ignored and ALL proceeds go to the on-chain trustee address, so a third-party executor can never redirect anything.
 
 ### Operator gas budget for the burn
 
@@ -275,13 +264,39 @@ The burn transaction pays gas from the trustee wallet (not from the protocol tre
 
 ### What gets destroyed, what gets returned
 
+Burned is genuinely terminal: after the burn, no on-chain resource keyed to the member address holds any value.
+
 | Resource | What happens at burn |
 |---|---|
 | TrusteeNFT | Destroyed (soulbound resource removed) |
-| Escrow EMM/KAY/TEE balances | Burned for SUPRA (sent to the payout address; or the trustee on the fallback path) |
+| Escrow EMM/KAY/TEE balances | ENTIRE remainder converted to SUPRA at the peg (to the payout address; or the trustee on the fallback path) |
+| Escrow resource | Destroyed outright (no ghost; a later re-mint at the same address starts clean) |
+| Lock vault | Expired-unclaimed locks drained into the conversion; the emptied vault destroyed |
+| Mint state (dVRF history) | Destroyed (a re-mint at the same address counts as a first mint again) |
 | WithdrawalConfig | Removed |
-| live_nft_count | Decremented |
+| live_nft_count | Decremented (pool sizing only; the refund N is the unburned count) |
 | Treasury share | min(decayed_nominal, pro_rata) sent to sponsor |
+
+### Dead-trustee cleanup: the janitor calls {#janitor}
+
+If a trustee disappears for good, two **permissionless** entry functions let anyone (a "janitor") clean up -- with every coin forced to the trustee/sponsor, never to the caller, so there is nothing to steal and the caller only pays gas. Both require the trustee to be **abandoned**: past the inactivity window PLUS the 2-day reactivate grace (registered members), or 30 days past mint (never-registered). Until then, all third-party calls abort -- a briefly-offline operator cannot be griefed.
+
+1. **`resolve_inactive`** -- clears whatever pending token-layer state blocks the fallback burn: an unclaimed pending mint (its SUPRA backing refunds to the trustee wallet), a stuck dVRF trigger (refunds likewise), and expired-but-unclaimed locks (unlocked into the trustee's escrow). Aborts with `E_NOTHING_TO_RESOLVE` if there is nothing to clear (or only an unexpired lock -- retry after it expires). Via the supra CLI:
+   ```bash
+   supra move tool run \
+     --function-id <CONTRACT>::exits::resolve_inactive \
+     --args u64:<NFT_ID> \
+     --profile <your_profile>
+   ```
+2. **Fallback burn** -- once nothing pending remains, burn the abandoned NFT. The recipient argument is ignored on this path (all conversion proceeds are forced to the trustee address; the sponsor still gets the refund):
+   ```bash
+   supra move tool run \
+     --function-id <CONTRACT>::exits::burn_trustee_nft \
+     --args u64:<NFT_ID> address:0x0 \
+     --profile <your_profile>
+   ```
+
+Check eligibility first with the read-only views `exits::is_abandoned(nft_id)` and `exits::preview_burn(nft_id)`. Why bother? Burning zombies shrinks the refund denominator for every remaining member (no burn ever lowers anyone else's achievable refund -- it only helps), and at wind-down, fallback-burning the stragglers is how the last member unlocks the carve-out. Paid cleanup.
 
 ## Monitoring protocol health {#monitoring}
 
