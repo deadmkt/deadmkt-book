@@ -123,7 +123,7 @@ chmod +x build.sh
 You will see many lines of output as the software compiles. This is normal. Wait until you see:
 
 ```
-Tagged: deadmkt-node:0.1.9, deadmkt-node:latest
+Tagged: deadmkt-node:0.14.0, deadmkt-node:latest
 ```
 
 If the build fails, make sure Docker is running (`sudo systemctl status docker`) and try again.
@@ -201,7 +201,7 @@ docker run -d --name deadmkt-node \
   -v deadmkt-data:/data \
   -e DEADMKT_KEYSTORE_PASSWORD='your_password_here' \
   --restart unless-stopped \
-  deadmkt-node:0.1.9
+  deadmkt-node:0.14.0
 ```
 
 The `--restart unless-stopped` flag means the node will automatically restart if it crashes or if the server reboots. This is recommended for servers that run 24/7.
@@ -217,7 +217,7 @@ docker logs -f deadmkt-node
 You should see output like:
 
 ```
-deadmkt-node v0.1.9
+deadmkt-node v0.14.0
 
   Network:  Testnet
   NFT ID:   1
@@ -243,7 +243,7 @@ docker run -d --name deadmkt-peer \
   -e DEADMKT_KEYSTORE_PASSWORD='your_password_here' \
   -e DEADMKT_NO_STRATEGY=1 \
   --restart unless-stopped \
-  deadmkt-node:0.1.9
+  deadmkt-node:0.14.0
 ```
 
 Port 9191 must be open in your firewall for other nodes to connect:
@@ -326,7 +326,7 @@ docker run -d --name deadmkt-node \
   -v /path/to/your/strategy.py:/data/strategy.py \
   -e DEADMKT_KEYSTORE_PASSWORD='your_password_here' \
   --restart unless-stopped \
-  deadmkt-node:0.1.9
+  deadmkt-node:0.14.0
 ```
 
 For example, if your strategy is in your home directory:
@@ -349,7 +349,7 @@ docker run -d --name deadmkt-node \
   -v deadmkt-data:/data \
   -e DEADMKT_KEYSTORE_PASSWORD='your_password_here' \
   --restart unless-stopped \
-  deadmkt-node:0.1.9
+  deadmkt-node:0.14.0
 ```
 
 Your data volume is preserved. The node resumes with the new binary and your existing keys and escrow.

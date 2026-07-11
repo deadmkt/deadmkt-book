@@ -22,7 +22,7 @@ The node responds with either:
     "markets": ["EMM/KAY", "KAY/TEE", "TEE/EMM"],
     "token_decimals": 5,
     "price_decimals": 8,
-    "contract_address": "0xbe4d...f009"
+    "contract_address": "0x79b2...94a9"
   }
 }
 ```
