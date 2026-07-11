@@ -18,7 +18,7 @@ The node responds with either:
   "data": {
     "nft_id": 42,
     "trustee_address": "0xabcd...1234",
-    "beneficiary_address": "0xef56...7890",
+    "payout_address": "0xef56...7890",
     "markets": ["EMM/KAY", "KAY/TEE", "TEE/EMM"],
     "token_decimals": 5,
     "price_decimals": 8,
@@ -62,7 +62,7 @@ Sent at the beginning of each batch cycle. Your strategy should respond with a `
     "circulating": {"EMM": "150000.00000", "KAY": "148000.00000", "TEE": "152000.00000"},
     "vault_locks": [],
     "batch_params": {
-      "blocks_per_batch": 10,
+      "blocks_per_batch": 20,
       "commits_per_batch": 3,
       "num_pools": 4
     },
@@ -191,12 +191,12 @@ Burn equal amounts of all three tokens, receiving SUPRA back to your **trustee**
 {"action": "burn", "amount": 10000000}
 ```
 
-### burn_to_beneficiary
+### burn_for_profit
 
-Same as burn, but SUPRA goes to your **beneficiary** address (profit distribution).
+Same as burn, but SUPRA goes to your **payout** address (profit distribution). DMKT14: was `burn_to_beneficiary`.
 
 ```json
-{"action": "burn_to_beneficiary", "amount": 10000000}
+{"action": "burn_for_profit", "amount": 10000000}
 ```
 
 ### lock

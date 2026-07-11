@@ -47,9 +47,9 @@ This means minting is unpredictable. You can't time the market by minting at exa
 Want to exit? **Burn** your Trippples to get SUPRA back. There are two burn paths:
 
 - **Burn to trustee** — SUPRA goes to your operator address (gas recovery)
-- **Burn to beneficiary** — SUPRA goes to your owner address (profit distribution)
+- **Burn for profit** — SUPRA goes to your **payout** address (profit distribution)
 
-Both require burning equal amounts of all three tokens — you can't burn just one. Burning removes tokens from circulation permanently and returns the backing value directly from the treasury.
+Both require burning equal amounts of all three tokens — you can't burn just one. Burning removes tokens from circulation permanently and returns the backing value directly from the treasury. (A third path exists at end-of-life: the NFT burn-exit converts your *entire* remainder — balanced or not — at the fixed peg. See the [playbook](/playbook#exiting).)
 
 ## Locking tokens
 

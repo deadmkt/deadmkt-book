@@ -8,23 +8,25 @@ This playbook is one page so a chat AI can hold the whole thing in context. If t
 
 DeadMKT is a decentralized order-matching market for three tokens (EMM, KAY, TEE) backed by SUPRA in a treasury. Anyone can run a node. Each node holds an NFT (the trading identity), keeps tokens in escrow, and submits orders into batch auctions every few seconds. Matched trades settle on-chain. The protocol has no broker, no central matching engine, no counterparty risk on the operator side.
 
-A node has three addresses (DMKT13+; was two prior):
+A node has one on-chain NFT and three addresses (DMKT14):
 
-- **Trustee** -- the keystore-derived address that signs orders. Lives on the operator's server. Loses it = loses the NFT identity.
-- **Beneficiary** -- a separate Supra wallet the operator already controls. Receives all profit takeouts. The trustee key cannot move funds out of the protocol; only the beneficiary can.
-- **Sponsor** -- the capital provider. Funded the NFT mint and receives the membership refund when the NFT is later burned via `burn-pair`. Stored immutably at mint time.
+- **Trustee** -- the keystore-derived address that signs orders. Lives on the operator's server. It owns the single trustee NFT and signs *everything*, including every fund-exit path. Loses it = loses the NFT identity.
+- **Sponsor** -- the capital provider. Funded the NFT mint and receives the membership refund when the NFT is later burned. Stored immutably on-chain at mint time.
+- **Payout** -- where trading yield and exit proceeds go. This is *not* on-chain and *not* an NFT: it's an address in the node's config (`payout_address`) that the node passes as the recipient on every withdrawal/burn/exit. The operator can point it at a cold wallet.
 
-On a "self-funded" node trustee == beneficiary == sponsor (one address, the simple case). On mainnet best-practice setups, all three are distinct: cold sponsor wallet, hot trustee keystore on the VPS, cold beneficiary wallet. Cold/hot key separation -- if the trustee is compromised, capital and yield are still safe.
+On a "self-funded" node trustee == sponsor == payout (one address, the simple case). On mainnet best-practice setups they are distinct: cold sponsor wallet, hot trustee keystore on the VPS, cold payout wallet.
+
+> **DMKT14 change:** earlier versions had a second, transferable *beneficiary* NFT that was the sole authority allowed to move funds out. That NFT is gone. The trustee now signs withdrawals and exits directly, and the destination is the off-chain `payout_address`. See the security note in [What you can't do alone](#help) for the trade-off this creates.
 
 ### Your three addresses {#your-three-addresses}
 
 | Role | Wallet type | What it signs | What it receives |
 |---|---|---|---|
-| Sponsor | Cold (no hot signing) | `mint_pair` once at setup | Time-decayed refund when NFT burns |
-| Trustee | Hot (on VPS) | Orders, commits, reveals, settles, heartbeats | Nothing long-term (operational key) |
-| Beneficiary | Cold (no hot signing) | `request_burn_pair`, `claim_all_as_supra`, `rushed_withdrawal_as_supra` | Profit distributions, leftover-token-burn-to-SUPRA at exit |
+| Sponsor | Cold (on-chain, immutable) | `mint_trustee_nft` once at setup | Time-decayed mint-fee refund when the NFT burns |
+| Trustee | Hot (on VPS) | Orders, commits, reveals, settles, heartbeats, **and all withdrawals/burns/exit** | Nothing long-term (operational key) |
+| Payout | Cold (off-chain config) | Nothing -- it is a destination, not a signer | Profit takeouts + leftover-token-burn-to-SUPRA at exit |
 
-The setup wizard asks for the beneficiary first, then the sponsor (default = trustee). On mainnet the wizard warns if `sponsor == trustee`.
+The setup wizard asks for the payout address first, then the sponsor (default = trustee).
 
 ## Setup (one-liner installer) {#setup}
 
@@ -36,7 +38,7 @@ curl -sSL https://get.deadmkt.com | bash
 
 The installer prompts for two things:
 
-1. A beneficiary address (`0x` + up to 64 hex chars). This is a Supra wallet address they already control.
+1. A payout address (`0x` + up to 64 hex chars). This is a Supra wallet they already control; trading yield and exit proceeds are sent here. Point it at a cold wallet if you can.
 2. A keystore password (typed twice, min 8 chars). This encrypts the trustee key on disk. **There is no recovery -- if they lose it, they lose the NFT.**
 
 After ~5-8 minutes (mostly `docker build`) the installer prints a v1 status JSON. Success looks like:
@@ -50,7 +52,7 @@ After ~5-8 minutes (mostly `docker build`) the installer prints a v1 status JSON
     "node_role": "trading",
     "nft_id": 1234,
     "trustee_address": "0xabc...",
-    "beneficiary_address": "0xdef..."
+    "payout_address": "0xdef..."
   },
   "runtime": { "uptime_batches": 3, "current_batch": 71203, "current_phase": "Match", "pool_id": 3, "num_pools": 5, "peers": 14, "last_block": 12345678 },
   "gas": { "balance_supra": "4.21", "status": "Normal", "trading_paused": false, "paused_since_batch": null },
@@ -92,10 +94,10 @@ They paste the result. You read these fields in order:
 
 1. `node_running` -- if `false`, the container isn't up. Tell them: `docker start deadmkt-node`.
 2. `runtime.peers` -- should be >= 5 once warmed up. If `0` for more than 30 seconds, gossip isn't finding peers. The container's gossip port (9191) needs to be reachable from the public internet; tell them to check their VPS firewall.
-3. `runtime.current_batch` -- should increase by 1 every ~17 seconds. If they paste two snapshots a minute apart and the number didn't change, the chain poller is stuck.
+3. `runtime.current_batch` -- should increase by 1 every batch (20 blocks; ~5 seconds at current testnet block cadence). If they paste two snapshots a minute apart and the number didn't change, the chain poller is stuck.
 4. `runtime.uptime_batches` -- how many batches this node has been alive for. Climbs by 1 per batch.
 5. `gas.status` -- `Normal` is good. `Low` means topping up gas soon would be wise. `Critical` means trading is paused right now.
-6. `gas.trading_paused` -- if `true`, the node is alive but not trading because it ran out of gas. They need to send SUPRA to `identity.trustee_address` from their beneficiary wallet, or call `burn --to escrow` to convert tokens back to SUPRA.
+6. `gas.trading_paused` -- if `true`, the node is alive but not trading because it ran out of gas. They need to send SUPRA to `identity.trustee_address` from any funded wallet, or call `burn --to escrow` to convert tokens back to SUPRA.
 7. `mint.has_pending_mint` -- if `true`, a mint is in flight. `mint.pending.seconds_remaining` counts down to auto-claim. They don't need to do anything; the node claims automatically when the hold expires.
 8. `escrow.{emm,kay,tee}` -- token balances in raw units (5 decimals). 5000000 means 50.00000 EMM.
 9. `liveness.consecutive_inactive` -- should be `0`. Anything > 2 means the contract thinks this node is inactive; the node will auto-attempt `reactivate()` but if `auto_reactivate_successes` stays at 0 the operator needs to investigate (usually insufficient escrow).
@@ -119,10 +121,10 @@ They paste the result. You read these fields in order:
 
 ## Withdrawing profits {#withdrawing-profits}
 
-Profit takeout: the operator burns equal triples of EMM/KAY/TEE from escrow, and the protocol pays out SUPRA to their beneficiary wallet.
+Profit takeout: the trustee burns equal triples of EMM/KAY/TEE from escrow, and the protocol pays out SUPRA to the configured payout address.
 
 ```bash
-docker exec -it deadmkt-node deadmkt-node burn --to beneficiary --amount 10000 --json
+docker exec -it deadmkt-node deadmkt-node burn --to payout --amount 10000 --json
 ```
 
 (`10000` is in raw 5-decimal units; this burns 0.10000 of each token. Adjust to taste.)
@@ -132,17 +134,17 @@ The node prompts for the keystore password (typed into their terminal -- not int
 ```json
 {
   "schema_version": "v1",
-  "command": "burn-to-beneficiary",
+  "command": "burn-for-profit",
   "success": true,
   "timestamp_unix": 1747700000,
   "tx_hash": "0xabc...",
   "gas_used": 234,
   "vm_status": "Executed successfully",
-  "fields": { "to": "beneficiary", "amount": 10000 }
+  "fields": { "to": "payout", "amount": 10000 }
 }
 ```
 
-The SUPRA arrives in their beneficiary wallet within a few seconds. Verify by checking the beneficiary balance on the Supra explorer.
+The SUPRA arrives in the payout wallet within a few seconds. Verify by checking the payout balance on the Supra explorer.
 
 ### `burn --to escrow` (different purpose)
 
@@ -150,7 +152,7 @@ The SUPRA arrives in their beneficiary wallet within a few seconds. Verify by ch
 docker exec -it deadmkt-node deadmkt-node burn --to escrow --amount 10000 --json
 ```
 
-This burns triples and returns SUPRA **to the escrow** (not the beneficiary wallet). Use this when the trustee account is running low on gas SUPRA but the operator doesn't want to take profit out yet -- it's a top-up, not a withdrawal.
+This burns triples and returns SUPRA **to the escrow** (not the payout wallet). Use this when the trustee account is running low on gas SUPRA but the operator doesn't want to take profit out yet -- it's a top-up, not a withdrawal.
 
 ### Failure shapes
 
@@ -192,22 +194,24 @@ docker exec -it deadmkt-node deadmkt-node withdraw rushed --json
 
 The grace clock gives the node's in-flight matches time to settle before exit. Cancel with `withdraw cancel-rushed`.
 
-All withdrawals are SUPRA-only -- the protocol does not let raw tokens out to a wallet. Tokens are burned at the contract; SUPRA flows to the beneficiary.
+All withdrawals are SUPRA-only -- the protocol does not let raw tokens out to a wallet. Tokens are burned at the contract; SUPRA flows to the payout address. The trustee signs these; pass `--json` and the node uses the configured `payout_address` as the recipient.
 
-## Exiting the protocol via burn-pair {#exiting}
+## Exiting the protocol via burn {#exiting}
 
-DMKT13+ adds a permissionless individual NFT burn-exit. Where `withdraw` paths drain tokens but keep the trading identity, `burn-pair` retires the NFT itself. The sponsor gets a time-decayed refund of their membership deposit; the beneficiary gets the leftover-token-burn-to-SUPRA proceeds; both NFTs are destroyed.
+DeadMKT has a permissionless individual NFT burn-exit. Where `withdraw` paths drain tokens but keep the trading identity, the burn retires the NFT itself. The sponsor gets a time-decayed refund of their membership deposit; the payout address gets the **entire escrow remainder converted to SUPRA at the fixed peg** -- balanced or not, nothing is stranded (hardening pass, 2026-07); the trustee NFT is destroyed.
 
-**The refund formula (rev5):**
+> **DMKT14 change:** this was a two-step `request_burn_pair` (beneficiary) -> `execute_burn_pair` (trustee) flow. With the beneficiary NFT gone, it is now a *single* trustee-signed call, `burn_trustee_nft(nft_id, recipient)`, where `recipient` is the payout address.
+
+**The refund formula (rev5 + hardening):** `N` below is the **unburned** NFT count (`total_minted - burned`), not the live/heartbeat count -- a reaped or deregistered NFT still counts toward N until it is actually burned.
 
 ```
-if N_active_before_burn == 1:
+if N_unburned_before_burn == 1:
     refund = entire treasury_balance     # last-NFT carve-out (uncapped)
 else:
     max_refund = mint_fee * max_refund_bps / 10_000      # rev5: 95% cap
     decay      = tenure_secs * decay_per_period / decay_period_secs
     nominal    = max(0, max_refund - decay)
-    pro_rata   = treasury_balance / N_active_before_burn
+    pro_rata   = treasury_balance / N_unburned_before_burn
     refund     = min(nominal, pro_rata)
 ```
 
@@ -223,59 +227,76 @@ At the AOE5 defaults (mint_fee=1,000 SUPRA, max_refund_bps=9500, 50 SUPRA decay 
 | Day 365 | ~340 (~66%) |
 | Day 570+ (~19 months) | 0 |
 
-**Why even day 0 loses 5%:** rev5 added `max_refund_bps` to make NFT flipping unprofitable. The curve starts at 950 SUPRA (= mint_fee × 95%) instead of 1,000, so a same-block mint-and-burn costs the sponsor at least 50 SUPRA regardless of tenure. Decay starts subtracting from there.
+**Why even day 0 loses 5%:** rev5 added `max_refund_bps` to make NFT flipping unprofitable. The curve starts at 950 SUPRA (= mint_fee * 95%) instead of 1,000, so a same-block mint-and-burn costs the sponsor at least 50 SUPRA regardless of tenure. Decay starts subtracting from there.
 
-**Bootstrap lockout:** during the first 24 hours of a new cohort (any time N transitions from 0 to 1), burns are blocked until either 5 NFTs exist OR the 24-hour grace window expires. This protects donor-bootstrap from arbitrage.
+**Bootstrap lockout:** no burns within the first 24 hours of a new cohort (any time the unburned count transitions from 0 to 1), unconditionally -- the window is purely time-based (the old "5 NFTs clears it early" escape was removed in the hardening pass). This protects donor-bootstrap from arbitrage.
 
-### Before you execute: flatten to avoid stranding {#drain-before-exit}
+### No flattening needed: the burn converts everything {#full-conversion}
 
-`execute_burn_pair` burns only the equal `min(EMM, KAY, TEE)` triple to SUPRA, then destroys both NFTs. **Any surplus above that equal triple is forfeited** -- once the NFT is destroyed it cannot be recovered (and `withdraw claim-all` / `rushed` also burn only the equal triple, so they cannot rescue it either). So flatten your escrow toward equal balances *before* you exit.
+The terminal burn converts the **entire** escrow remainder per-token at the fixed peg (1 token unit = 100 SUPRA quants) -- imbalanced remainders are NOT forfeited. (Before the 2026-07 hardening pass the burn only converted the equal `min(EMM, KAY, TEE)` triple and stranded the surplus; if an older guide tells you to flatten balances before exiting, it is out of date.) The everyday `withdraw claim-all` / `rushed` paths still burn only equal triples -- full conversion happens exclusively inside `burn_trustee_nft`.
 
-Check balances first:
+### When can you burn? The exit gates {#exit-gates}
 
-```bash
-docker exec -it deadmkt-node deadmkt-node status --json
-# read .escrow -> { emm, kay, tee }
-```
+`burn_trustee_nft` checks, in order -- and `burn-pair preview` reports the first gate that would fail:
 
-Then drain the surplus, highest balance down toward the lowest:
+1. **Not already burned.**
+2. **Bootstrap lockout** -- the 24h cohort window above.
+3. **Blocked-NFT rule** -- an NFT blocked by a commit-violation report is frozen only during the enforcement grace window; once enforcement is active it may exit like anyone else (its cost is the freeze, the refund decay, and the mint fee to re-enter -- never confiscation).
+4. **Quiet period** -- you must not have participated in a settlement within the last `REPORT_WINDOW_BATCHES` batches (hours-scale). This is the same window in which commit-violation reports are accepted, so nobody can burn while a report against them could still land. **Stopping signing starts the clock:** a counterparty can settle your still-valid signed commitments (refreshing your stamp) for up to `settlement_max_age` batches after you sign them, so the worst-case voluntary exit delay is: wait out any unexpired lock, then `settlement_max_age` of re-stamp exposure, then the quiet window. Heartbeats and deposits do NOT reset the quiet clock -- you can stay alive while clocking toward exit.
+5. **No pending token-layer state** -- no unclaimed pending mint, not the current dVRF trigger, no *unexpired* lock (expired-but-unclaimed locks are drained into the conversion automatically; a live lock is waited out, never broken).
 
-1. **Take the bulk as profit.** `burn --to beneficiary --amount <min_of_the_three>` burns that many of *each* token to SUPRA in your beneficiary wallet, without destroying the NFT:
-   ```bash
-   docker exec -it deadmkt-node deadmkt-node burn --to beneficiary --amount 3000 --json
-   ```
-2. **Trade the still-tradeable remainder.** Anything at or above `min_trade_quantity` can still be sold on the market -- let your trading agent run (it sells the over-weighted token toward flat) or place the orders yourself. This is the only way to move a *single* token's surplus; the operator CLI cannot place trades.
-3. **Donate the sub-minimum dust.** Whatever is left below `min_trade_quantity` is too small to trade -- donate it to another NFT's escrow via `donate_dust` (a strategy/agent WebSocket action; the CLI does not expose it).
-4. **Confirm** balances are ~equal (or zero) via `status --json`, then run the three-step burn below.
+### Single-call flow
 
-**Worked example** (`min_trade_quantity = 1000`): escrow holds EMM 3000, KAY 3100, TEE 4000. Burn the equal triple (3000 each) for profit -> EMM 0, KAY 100, TEE 1000. Trade away the 1000 TEE (at the minimum, still tradeable). Donate the 100 KAY dust (below the minimum). Nothing remains to strand -> burn cleanly.
-
-If you skip this, `execute_burn_pair` still succeeds -- you simply forfeit the unequal surplus. The protocol never hands it to anyone else; it just becomes unrecoverable once the NFT is destroyed.
-
-### Three-step flow
-
-1. **Beneficiary requests burn** -- signs `exits::request_burn_pair(nft_id)` from the beneficiary wallet (NOT the trustee, NOT via the node CLI). This sets a flag; there is no cancel.
-2. **Preview the refund** -- read-only, anyone can call:
+1. **Preview** -- read-only, anyone can call:
    ```bash
    docker exec -it deadmkt-node deadmkt-node burn-pair preview --json
    ```
-   Returns the refund amount in raw SUPRA + human-readable form. Reflects bootstrap lockout (returns 0 if locked) + last-NFT carve-out + time-decay + pro-rata cap.
-3. **Trustee executes** -- signs `exits::execute_burn_pair(nft_id)` from the trustee keystore. Picks an idle moment (no pending commits, no in-flight settlements). If the trustee has been reaped (heartbeat sweep marked it inactive), anyone can execute -- "death-of-parent" safety valve.
+   Returns the refund amount + the first failing exit gate (if any). Reflects bootstrap lockout, the quiet period, blocked-grace, pending state, last-NFT carve-out, time-decay and the pro-rata cap.
+2. **Trustee burns** -- signs `exits::burn_trustee_nft(nft_id, recipient)` from the trustee keystore (the node passes the configured `payout_address` as `recipient`):
+   ```bash
+   docker exec -it deadmkt-node deadmkt-node burn-pair execute --json
+   ```
+   If the trustee is **abandoned** -- past every self-recovery window (inactivity + the 2-day reactivate grace for registered members; 30 days from mint for never-registered ones) -- anyone can call it: the "death-of-parent" safety valve. On that fallback path the supplied recipient is ignored and ALL proceeds go to the on-chain trustee address, so a third-party executor can never redirect anything.
 
-### Operator gas budget for execute
+### Operator gas budget for the burn
 
-The execute transaction pays gas from the trustee wallet (not from the protocol treasury). Keep at least ~20 SUPRA in the trustee balance through the exit. If the trustee is gas-broke, the sponsor can briefly top up the trustee wallet, or wait for the heartbeat sweep to mark the trustee inactive and use the fallback path from any funded address.
+The burn transaction pays gas from the trustee wallet (not from the protocol treasury). Keep at least ~20 SUPRA in the trustee balance through the exit. If the trustee is gas-broke, anyone can briefly top up the trustee wallet, or wait for the heartbeat sweep to mark the trustee inactive and use the fallback path from any funded address.
 
 ### What gets destroyed, what gets returned
 
-| Resource | What happens at execute |
+Burned is genuinely terminal: after the burn, no on-chain resource keyed to the member address holds any value.
+
+| Resource | What happens at burn |
 |---|---|
 | TrusteeNFT | Destroyed (soulbound resource removed) |
-| BeneficiaryNFT object | Destroyed (object deleted via Move object framework) |
-| Escrow EMM/KAY/TEE balances | Burned for SUPRA (sent to beneficiary) |
+| Escrow EMM/KAY/TEE balances | ENTIRE remainder converted to SUPRA at the peg (to the payout address; or the trustee on the fallback path) |
+| Escrow resource | Destroyed outright (no ghost; a later re-mint at the same address starts clean) |
+| Lock vault | Expired-unclaimed locks drained into the conversion; the emptied vault destroyed |
+| Mint state (dVRF history) | Destroyed (a re-mint at the same address counts as a first mint again) |
 | WithdrawalConfig | Removed |
-| live_nft_count | Decremented |
+| live_nft_count | Decremented (pool sizing only; the refund N is the unburned count) |
 | Treasury share | min(decayed_nominal, pro_rata) sent to sponsor |
+
+### Dead-trustee cleanup: the janitor calls {#janitor}
+
+If a trustee disappears for good, two **permissionless** entry functions let anyone (a "janitor") clean up -- with every coin forced to the trustee/sponsor, never to the caller, so there is nothing to steal and the caller only pays gas. Both require the trustee to be **abandoned**: past the inactivity window PLUS the 2-day reactivate grace (registered members), or 30 days past mint (never-registered). Until then, all third-party calls abort -- a briefly-offline operator cannot be griefed.
+
+1. **`resolve_inactive`** -- clears whatever pending token-layer state blocks the fallback burn: an unclaimed pending mint (its SUPRA backing refunds to the trustee wallet), a stuck dVRF trigger (refunds likewise), and expired-but-unclaimed locks (unlocked into the trustee's escrow). Aborts with `E_NOTHING_TO_RESOLVE` if there is nothing to clear (or only an unexpired lock -- retry after it expires). Via the supra CLI:
+   ```bash
+   supra move tool run \
+     --function-id <CONTRACT>::exits::resolve_inactive \
+     --args u64:<NFT_ID> \
+     --profile <your_profile>
+   ```
+2. **Fallback burn** -- once nothing pending remains, burn the abandoned NFT. The recipient argument is ignored on this path (all conversion proceeds are forced to the trustee address; the sponsor still gets the refund):
+   ```bash
+   supra move tool run \
+     --function-id <CONTRACT>::exits::burn_trustee_nft \
+     --args u64:<NFT_ID> address:0x0 \
+     --profile <your_profile>
+   ```
+
+Check eligibility first with the read-only views `exits::is_abandoned(nft_id)` and `exits::preview_burn(nft_id)`. Why bother? Burning zombies shrinks the refund denominator for every remaining member (no burn ever lowers anyone else's achievable refund -- it only helps), and at wind-down, fallback-burning the stragglers is how the last member unlocks the carve-out. Paid cleanup.
 
 ## Monitoring protocol health {#monitoring}
 
@@ -423,6 +444,20 @@ docker logs deadmkt-node --tail 100
 ```
 
 If the log says "No config.json or keystore.json found" -- the data volume is missing. The operator's keystore at `~/.deadmkt/keystore.json` must be intact; re-run the installer to recreate the container.
+
+## Key security model (DMKT14) {#security-model}
+
+The trustee key is hot (it lives on the VPS to sign orders) and, since DMKT14, it also signs every fund-exit. It chooses the destination at call time, so **if the trustee keystore is compromised, an attacker can drain escrow/profit to their own address.** Treat the trustee as a hot wallet:
+
+- Run the node on a hardened host; protect `~/.deadmkt/keystore.json` and its password.
+- Withdraw to your cold **payout** wallet regularly and keep escrow/trustee balances modest -- the exposure is whatever has accrued since your last withdrawal, not your lifetime earnings.
+
+Two things stay protected regardless of a hot-key compromise:
+
+- **The sponsor's mint-fee refund.** `sponsor` is fixed on-chain at mint and immutable; a burn always refunds there no matter who signs. The largest single sum (up to 95% of the mint fee) cannot be redirected by a stolen trustee key.
+- **The fallback burn.** If the trustee is reaped and a third party burns the NFT, the token-burn SUPRA is forced to the on-chain trustee address -- a random executor cannot point it at themselves.
+
+This is the deliberate trade-off DMKT14 made: dropping the separate cold beneficiary NFT for a much simpler contract, in exchange for the yield path no longer being cold-custodied. The capital refund remains cold-protected.
 
 ## What you can't do alone {#help}
 
