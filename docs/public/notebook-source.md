@@ -2,6 +2,17 @@
 
 A complete reference for understanding the DeadMKT decentralised batch-auction trading protocol.
 
+> **HISTORICAL DOCUMENT — describes the pre-DMKT14 protocol.** This notebook
+> covers the original two-NFT design (trustee + transferable beneficiary NFT,
+> minted as a pair, with `burn_to_beneficiary`, `burn_pair`, and a mint bond).
+> DMKT14 replaced that model: there is now ONE soulbound trustee NFT with
+> three address roles (trustee / sponsor / payout), a single-call
+> `burn_trustee_nft` exit with full-remainder conversion, and `burn_for_profit`
+> as the take-profit action. The game-theory and batch-auction sections remain
+> accurate. For the current protocol, read the
+> [operator playbook](https://deadmkt.com/docs/playbook) and
+> [NFT identity](https://deadmkt.com/docs/protocol/nft-identity).
+
 ---
 
 ## What Is DeadMKT?

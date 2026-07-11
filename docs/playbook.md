@@ -94,7 +94,7 @@ They paste the result. You read these fields in order:
 
 1. `node_running` -- if `false`, the container isn't up. Tell them: `docker start deadmkt-node`.
 2. `runtime.peers` -- should be >= 5 once warmed up. If `0` for more than 30 seconds, gossip isn't finding peers. The container's gossip port (9191) needs to be reachable from the public internet; tell them to check their VPS firewall.
-3. `runtime.current_batch` -- should increase by 1 every ~17 seconds. If they paste two snapshots a minute apart and the number didn't change, the chain poller is stuck.
+3. `runtime.current_batch` -- should increase by 1 every batch (20 blocks; ~5 seconds at current testnet block cadence). If they paste two snapshots a minute apart and the number didn't change, the chain poller is stuck.
 4. `runtime.uptime_batches` -- how many batches this node has been alive for. Climbs by 1 per batch.
 5. `gas.status` -- `Normal` is good. `Low` means topping up gas soon would be wise. `Critical` means trading is paused right now.
 6. `gas.trading_paused` -- if `true`, the node is alive but not trading because it ran out of gas. They need to send SUPRA to `identity.trustee_address` from any funded wallet, or call `burn --to escrow` to convert tokens back to SUPRA.

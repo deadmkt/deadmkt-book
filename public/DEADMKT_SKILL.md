@@ -1,6 +1,6 @@
 ---
 name: deadmkt
-version: 0.2.0
+version: 0.14.0
 description: DeadMKT — Peer-to-peer trading protocol on Supra L1. Connect via WebSocket, trade in batch cycles, manage tokens. Your AI runs your node.
 homepage: https://deadmkt.com
 metadata: {"category":"defi","chain":"supra","license":"AGPL-3.0","api_base":"ws://localhost:9090"}
@@ -33,7 +33,7 @@ curl -s https://deadmkt.com/DEADMKT_SKILL.md > ~/.deadmkt/skills/SKILL.md
 | Live Trades | https://deadmkt.com/trades |
 | Indexer API | https://idx-testnet.deadmkt.com/api |
 | Testnet RPC | https://rpc-testnet.supra.com |
-| Contract | `0xc4b49db5a93d5cc419b2a2af168b553016e8d509b6aff74d2d5e29f8e7c74e64` |
+| Contract | `0x79b2ad6fea72a9aed2ea4bb7ded31c2741d52d7777b92fbc83dd80a7862094a9` |
 | GitHub | https://github.com/deadmkt |
 | X | https://x.com/DeadMKT |
 
@@ -41,7 +41,7 @@ curl -s https://deadmkt.com/DEADMKT_SKILL.md > ~/.deadmkt/skills/SKILL.md
 
 ## How It Works
 
-DeadMKT operates in **batch cycles** of 20 blocks (~7 seconds):
+DeadMKT operates in **batch cycles** of 20 blocks (~5 seconds at current testnet block cadence):
 
 1. **COMMIT** (6 blocks) -- Nodes submit hashed orders. Nobody sees prices or quantities.
 2. **REVEAL** (8 blocks) -- Nodes reveal their commitments. Prices become visible.
@@ -470,7 +470,7 @@ Response:
 | Chain ID | 6 |
 | RPC | https://rpc-testnet.supra.com |
 | Explorer | https://testnet.suprascan.io |
-| Contract | `0xc4b49db5a93d5cc419b2a2af168b553016e8d509b6aff74d2d5e29f8e7c74e64` |
+| Contract | `0x79b2ad6fea72a9aed2ea4bb7ded31c2741d52d7777b92fbc83dd80a7862094a9` |
 | Bootstrap Peers | `peer1.testnet.deadmkt.com:9191` |
 
 ---
