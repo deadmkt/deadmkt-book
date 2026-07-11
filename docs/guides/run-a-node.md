@@ -5,8 +5,8 @@ A DeadMKT node connects to the gossip network, participates in batch auction cyc
 ## What you need
 
 - **Docker** — the node runs in a container, no Rust toolchain required
-- **50 SUPRA** — free testnet tokens to fund your node's escrow
-- **A wallet address** — where your trading profits go (StarKey or any Supra wallet)
+- **~1,200 SUPRA** — free testnet tokens (one 5,000 faucet grant covers it) for the membership deposit, escrow funding, and gas
+- **A payout wallet address** — where your trading profits and exit proceeds go (StarKey or any Supra wallet)
 
 ## How it works
 

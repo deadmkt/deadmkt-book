@@ -68,6 +68,7 @@ export default defineConfig({
       {
         text: 'Guides',
         items: [
+          { text: 'Operator Playbook (AI-paste)', link: '/playbook' },
           { text: 'Getting Started', link: '/guides/getting-started' },
           { text: 'Run a Node', link: '/guides/run-a-node' },
           { text: 'Install (macOS)', link: '/guides/install-a-node-macos' },
