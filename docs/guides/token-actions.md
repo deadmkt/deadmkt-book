@@ -48,12 +48,12 @@ You can also use the explicit name:
 {"action": "burn_from_escrow", "amount": 10000000}
 ```
 
-## Burn to Beneficiary
+## Burn for Profit
 
-Same as burn, but the SUPRA goes to your **beneficiary** address instead. This is how profits are distributed — the agent decides when to take profit and sends the SUPRA to the owner.
+Same as burn, but the SUPRA goes to your **payout** address instead (DMKT14: was `burn_to_beneficiary`). This is how profits are distributed — the agent decides when to take profit and sends the SUPRA to the payout wallet.
 
 ```json
-{"action": "burn_to_beneficiary", "amount": 10000000}
+{"action": "burn_for_profit", "amount": 10000000}
 ```
 
 ## Lock
@@ -109,7 +109,7 @@ Use this data to decide when to claim mints or unlock tokens.
 
 - **Minting** increases your capital but costs SUPRA and has an unpredictable hold period
 - **Burning to trustee** recovers SUPRA for gas — keep your node funded
-- **Burning to beneficiary** distributes profits to the owner — this is the exit path
+- **Burning for profit** distributes profits to the payout wallet — this is the routine take-profit path
 - **Locking** reduces circulating supply, which can affect market prices. It's a signal of commitment
 - **Donating dust** clears stranded sub-minimum balances and builds counterparty relationships
 - **Timing matters** — mint when the dVRF state is `OPEN`, claim as soon as the hold period ends, lock when you want to influence supply dynamics

@@ -2,51 +2,84 @@
 
 ## Your on-chain identity
 
-Every participant in DeadMKT has a **trustee NFT pair**. This is your identity on the network — it links your node to your on-chain escrow, tracks your participation, and holds your bond.
+Every participant in DeadMKT holds a single **trustee NFT**. It is soulbound
+(non-transferable), it is your identity on the network -- it links your node to
+your on-chain escrow, tracks your participation, and anchors your membership.
 
-Think of it as your membership card, except it's cryptographic, on-chain, and can't be faked.
+Think of it as your membership card, except it's cryptographic, on-chain, and
+can't be faked -- or sold.
 
-## How it works
+## The three addresses (DMKT14)
 
-When you run the setup wizard, it mints an NFT pair for you:
+One NFT, three roles:
 
-- **Trustee NFT** — tied to the address your node operates from (your "hot" key). This is the key that signs orders, submits settlements, and interacts with the protocol.
-- **Beneficiary address** — a separate address where profits and withdrawals are sent (your "cold" key). This separation means your trading key doesn't need to be the same as the key that holds your money.
+- **Trustee** -- the keystore-derived address your node operates from (your
+  "hot" key). It owns the NFT and signs everything: orders, settlements,
+  heartbeats, and every withdrawal or exit.
+- **Sponsor** -- the capital provider. Pays the membership fee at mint and is
+  recorded **immutably on-chain**; the sponsor receives the membership refund
+  when the NFT is eventually burned, no matter who signs the burn. If you fund
+  yourself, sponsor = trustee.
+- **Payout** -- where trading profits and exit proceeds are sent. This is not
+  on-chain: it lives in your node's config (`payout_address`) and is passed as
+  the recipient on each withdrawal. Point it at a cold wallet.
 
-## The bond
+The setup wizard asks for the payout address first, then the sponsor
+(default: your trustee address). See the
+[operator playbook](/playbook#your-three-addresses) for the full security
+model.
 
-Minting an NFT pair requires a **bond** — a stake of SUPRA that's locked as long as you're participating. The bond serves two purposes:
+## The membership fee
 
-1. **Commitment signal** — you have skin in the game. Registering isn't free.
-2. **Recovery** — when you deregister and complete the holding period, your bond is returned in full.
+Minting the NFT costs a **membership fee** (1,000 SUPRA at current
+parameters), paid by the sponsor into the protocol's operations treasury. The
+fee is what keeps the protocol running without any company behind it -- it
+funds the on-chain automation, randomness subscriptions, and infrastructure.
 
-The bond amount and lock duration are on-chain parameters. On testnet, these are set to reasonable defaults so you can get started quickly.
+It is partially refundable: when the NFT is burned, the sponsor receives a
+**time-decayed refund** -- starting at 95% of the fee and decaying by 50 SUPRA
+per 30 days of membership, reaching zero after roughly 19 months. Your
+membership is a subscription paid by staying; leave early and most of the fee
+comes back.
 
 ## Registration
 
-After your NFT is minted, you **register as a trader** by calling the escrow contract. This:
+After your NFT is minted, the wizard **registers you as a trader** on the
+escrow contract. This:
 
 - Links your NFT to your escrow account
-- Sets your holding period (how long before you can fully withdraw after starting the exit process)
+- Sets your withdrawal rules (holding period, rushed-withdrawal permission)
 - Enables deposits, trading, and settlement
-
-The wizard handles registration automatically.
 
 ## One identity per participant
 
-Each trustee address has one NFT. Your trading history, settlement record, and escrow balances are all tied to it. If your NFT gets blocked (for commit violations, for example), your ability to trade is affected.
+Each trustee address has one NFT. Your trading history, settlement record,
+and escrow balances are all tied to it. If your NFT gets blocked (for commit
+violations, for example), your ability to trade is affected -- but never your
+ability to eventually exit: a blocked NFT is frozen only during the
+enforcement grace window, and every state has an exit path.
 
-This is by design. Reputation is meaningful when identity is persistent.
+This is by design. Reputation is meaningful when identity is persistent --
+and persistence is meaningful when the identity can't be bought or sold.
 
-## Leaving: Deregistration
+## Leaving
 
-When you want to leave the network:
+Two layers of exit, both permissionless:
 
-1. **Deregister** — the contract checks that you have no pending mints, no active locks, and no dVRF trigger in progress. If you're clear, deregistration proceeds.
-2. **Holding period** — your escrow enters a holding period. After it expires, you can withdraw everything.
-3. **Withdrawal** — move your tokens out of escrow.
-4. **Burn NFT** — optional. Reclaim your bond.
+1. **Withdraw** -- drain your escrow as SUPRA (holding-period path, or the
+   faster penalized "rushed" path) while keeping your membership.
+2. **Burn-exit** -- retire the NFT itself with a single trustee-signed call.
+   The **entire** escrow remainder converts to SUPRA at the fixed peg and goes
+   to your payout address; the sponsor receives the time-decayed refund; the
+   NFT is destroyed. Nothing is stranded, nothing needs permission.
 
-No lock-ups beyond the holding period. No withdrawal fees. No "please contact support." Your money, your choice, always.
+If a member disappears for good, anyone can clean up after the abandonment
+windows pass -- with all proceeds forced to the original trustee and sponsor,
+never to the caller. See the playbook's
+[exit section](/playbook#exiting) and
+[janitor calls](/playbook#janitor) for the full rules.
+
+No lock-ups beyond what you configured. No withdrawal fees. No "please
+contact support." Your money, your choice, always.
 
 [Pools →](/protocol/pools)

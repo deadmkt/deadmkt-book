@@ -10,7 +10,7 @@ Your node's configuration is stored in `config.json`, created by the setup wizar
 | `rpc_urls` | array | Supra testnet RPC | Chain RPC endpoints |
 | `nft_id` | number | (from wizard) | Your trustee NFT ID |
 | `trustee_address` | string | (from wizard) | Your on-chain address |
-| `beneficiary_address` | string | (from wizard) | Where profits/withdrawals go |
+| `payout_address` | string | (from wizard) | Where profits, withdrawals, and exit proceeds go — the node passes this as the recipient on every withdrawal/burn (DMKT14: replaces `beneficiary_address`) |
 | `strategy_auth_token` | string | (random) | Token your strategy uses to authenticate |
 
 ## Markets
@@ -35,7 +35,7 @@ All four point to the same deployer address on testnet. They're separate fields 
 
 | Field | Type | Default | Description |
 |-------|------|---------|-------------|
-| `bootstrap_peers` | array | 5 testnet peers | Initial peers to connect to |
+| `bootstrap_peers` | array | testnet bootstrap peers | Initial peers to connect to (currently `peer1`/`peer2.testnet.deadmkt.com`; unresolvable entries are skipped with a warning) |
 | `strategy_port` | number | `9090` | WebSocket port for strategy connections |
 | `gossip_port` | number | `9191` | P2P gossip port |
 | `chain_id` | number | `6` | Supra chain ID (6 = testnet, 8 = mainnet) |
