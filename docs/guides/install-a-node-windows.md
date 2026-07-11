@@ -118,7 +118,7 @@ Run the build script:
 You will see many lines of output as the software compiles. This is normal. Wait until you see:
 
 ```
-Tagged: deadmkt-node:0.1.9, deadmkt-node:latest
+Tagged: deadmkt-node:0.14.0, deadmkt-node:latest
 ```
 
 If the build fails, make sure Docker Desktop is running (whale icon in your system tray) and try again.
@@ -143,7 +143,7 @@ You need testnet SUPRA tokens to fund your node. These are free test tokens with
 2. At the top of the wallet, find the network dropdown. It may say "Mainnet" by default. Click it and select **Testnet**.
 3. Look for a **faucet** button or **Collect** option within the wallet.
 4. Select **Supra** as the token.
-5. Click **Collect** or **Claim** to receive free testnet tokens. You will receive 50 SUPRA.
+5. Click **Collect** or **Claim** to receive free testnet tokens. You will receive 5,000 SUPRA per request.
 6. Wait a few seconds for the tokens to appear in your wallet balance.
 
 ### Copy Your Wallet Address
@@ -190,7 +190,7 @@ When you see `Setup complete!`, your node is ready.
 Replace `your_password_here` with the keystore password you chose during setup:
 
 ```
-docker run -d --name deadmkt-node -v deadmkt-data:/data -e DEADMKT_KEYSTORE_PASSWORD='your_password_here' --restart unless-stopped deadmkt-node:0.1.9
+docker run -d --name deadmkt-node -v deadmkt-data:/data -e DEADMKT_KEYSTORE_PASSWORD='your_password_here' --restart unless-stopped deadmkt-node:0.14.0
 ```
 
 **Important**: If your password contains special characters, wrap it in single quotes as shown above.
@@ -206,7 +206,7 @@ docker logs -f deadmkt-node
 You should see output like:
 
 ```
-deadmkt-node v0.1.9
+deadmkt-node v0.14.0
 
   Network:  Testnet
   NFT ID:   1

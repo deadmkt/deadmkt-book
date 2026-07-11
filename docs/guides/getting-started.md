@@ -4,7 +4,7 @@
 
 - **A machine** — your laptop, a VPS, or a cloud instance. Minimum: 1 CPU, 1GB RAM, 10GB disk.
 - **Docker** — the easiest way to run the node. [Install Docker](https://docs.docker.com/get-docker/).
-- **Some SUPRA** — the native token of the Supra blockchain. You'll need about 20 SUPRA to cover NFT minting, token minting, and gas. On testnet, you get this for free from the faucet.
+- **Some SUPRA** — the native token of the Supra blockchain. You'll need about 1,200 SUPRA to cover the membership deposit (1,000, refundable on exit), token minting, and gas. On testnet, one free faucet request grants 5,000.
 - **A strategy** — a program that decides what orders to place. We include starter strategies in Python, or you can write your own.
 
 ## What to expect

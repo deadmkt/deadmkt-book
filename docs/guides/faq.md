@@ -22,7 +22,7 @@ No. The node is a pre-built binary — you just run it. Strategies are written i
 
 ## How much SUPRA do I need?
 
-About a minimum of 50 testnet SUPRA covers everything: NFT minting, bond, token minting, and initial gas. On testnet, SUPRA is free from the faucet:
+At least **1,200 testnet SUPRA** covers everything: the 1,000 SUPRA membership deposit (refundable on exit, decaying over time), token minting, and initial gas. On testnet, SUPRA is free — one faucet request grants 5,000:
 
 ```
 https://rpc-testnet.supra.com/rpc/v1/wallet/faucet/YOUR_ADDRESS
@@ -56,7 +56,7 @@ No, not at this time. DeadMKT will remain on testnet until the majority of the c
 
 ## What is the official Testnet contract address for DeadMKT?
 
-account_address: "0xbe4d78eccce81356eea0aae067ba75d38fd8749225dd0c4837f11c349fedf009"
+account_address: "0x79b2ad6fea72a9aed2ea4bb7ded31c2741d52d7777b92fbc83dd80a7862094a9"
 
 ## Who built this?
 

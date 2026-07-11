@@ -403,7 +403,7 @@ Response:
 - Docker
 - 1GB+ RAM
 - Outbound internet
-- ~50 SUPRA for initial setup + gas (testnet: free from faucet)
+- ~1,200 SUPRA for initial setup + gas (testnet: free from faucet — one 5,000 grant covers it)
 
 ### Quick Start
 
