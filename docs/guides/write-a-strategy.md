@@ -46,13 +46,13 @@ async def run():
                             "pair": "EMM/KAY",
                             "side": "buy",
                             "price": "0.04990000",
-                            "quantity": "100.00000"
+                            "quantity": "1000.00000"
                         },
                         {
                             "pair": "EMM/KAY",
                             "side": "sell",
                             "price": "0.05100000",
-                            "quantity": "50.00000"
+                            "quantity": "1000.00000"
                         }
                     ]
                 }))
@@ -70,8 +70,8 @@ Every batch, your strategy gets a `batch_start` event with everything it needs:
   "data": {
     "batch_id": 500,
     "pool_id": 2,
-    "escrow": {"EMM": "330.00000", "KAY": "285.50000", "TEE": "310.25000"},
-    "escrow_confirmed": {"EMM": "330.00000", "KAY": "285.50000", "TEE": "310.25000"},
+    "escrow": {"EMM": "3300.00000", "KAY": "2855.00000", "TEE": "3102.50000"},
+    "escrow_confirmed": {"EMM": "3300.00000", "KAY": "2855.00000", "TEE": "3102.50000"},
     "wallet": {"EMM": "0.00000", "KAY": "0.00000", "TEE": "0.00000"},
     "gas_balance": "1.50000000",
     "mint_state": {
@@ -85,13 +85,13 @@ Every batch, your strategy gets a `batch_start` event with everything it needs:
     "circulating": {"EMM": "150000.00000", "KAY": "148000.00000", "TEE": "152000.00000"},
     "vault_locks": [],
     "batch_params": {
-      "blocks_per_batch": 10,
+      "blocks_per_batch": 20,
       "commits_per_batch": 3,
       "num_pools": 4
     },
     "pending_settlements": [],
     "peers_in_pool": 7,
-    "min_trade_quantity": "100000",
+    "min_trade_quantity": "100000000",
     "last_batch": {"batch_id": 499, "matches": 3, "volume": "1500.00000"}
   }
 }
@@ -109,7 +109,7 @@ Your strategy can use any of this data to make decisions:
 - **batch_params** — how many orders you can submit this batch
 - **pending_settlements** — trades waiting for on-chain confirmation
 - **peers_in_pool** — how many counterparties are in your pool
-- **min_trade_quantity** — minimum order size in raw units (100000 = 1 token)
+- **min_trade_quantity** — minimum order size in raw units at 5 decimals (100000000 = 1,000 tokens, the current testnet minimum). Read this each batch rather than hardcoding it — orders below it are rejected at validation
 - **last_batch** — previous batch results (matches, volume)
 
 ## Order format
@@ -124,7 +124,7 @@ Orders go in the `commit` action:
       "pair": "EMM/KAY",
       "side": "buy",
       "price": "0.04990000",
-      "quantity": "100.00000"
+      "quantity": "1000.00000"
     }
   ]
 }
@@ -145,9 +145,9 @@ You can trade all three pairs in a single batch:
 
 ```python
 orders = [
-    {"pair": "EMM/KAY", "side": "buy",  "price": "0.05000000", "quantity": "100.00000"},
-    {"pair": "KAY/TEE", "side": "sell", "price": "0.04800000", "quantity": "50.00000"},
-    {"pair": "TEE/EMM", "side": "buy",  "price": "0.05200000", "quantity": "75.00000"},
+    {"pair": "EMM/KAY", "side": "buy",  "price": "0.05000000", "quantity": "1000.00000"},
+    {"pair": "KAY/TEE", "side": "sell", "price": "0.04800000", "quantity": "1000.00000"},
+    {"pair": "TEE/EMM", "side": "buy",  "price": "0.05200000", "quantity": "1200.00000"},
 ]
 ```
 
