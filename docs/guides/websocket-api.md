@@ -47,8 +47,8 @@ Sent at the beginning of each batch cycle. Your strategy should respond with a `
   "data": {
     "batch_id": 500,
     "pool_id": 2,
-    "escrow": {"EMM": "330.00000", "KAY": "285.50000", "TEE": "310.25000"},
-    "escrow_confirmed": {"EMM": "330.00000", "KAY": "285.50000", "TEE": "310.25000"},
+    "escrow": {"EMM": "3300.00000", "KAY": "2855.00000", "TEE": "3102.50000"},
+    "escrow_confirmed": {"EMM": "3300.00000", "KAY": "2855.00000", "TEE": "3102.50000"},
     "wallet": {"EMM": "0.00000", "KAY": "44.50000", "TEE": "19.75000"},
     "gas_balance": "1.50000000",
     "mint_state": {
@@ -68,7 +68,7 @@ Sent at the beginning of each batch cycle. Your strategy should respond with a `
     },
     "pending_settlements": [],
     "peers_in_pool": 7,
-    "min_trade_quantity": "1.00000",
+    "min_trade_quantity": "100000000",
     "last_batch": {"batch_id": 499, "matches": 3, "volume": "1500.00000"}
   }
 }
@@ -84,7 +84,7 @@ Sent when the reveal phase begins. Your strategy can optionally respond with a `
 
 ### match_result
 
-Sent after matching completes. Shows your fills for this batch.
+Sent after matching completes. Shows your fills for this batch. Note: unlike order submission, `price` and `quantity` here are raw canonical units (price x 1e8, quantity x 1e5). The price is the settlement midpoint, not your submitted limit. This example is a fill of 1,000 EMM at 0.05 KAY per EMM.
 
 ```json
 {
@@ -95,8 +95,8 @@ Sent after matching completes. Shows your fills for this batch.
       {
         "pair": "EMM/KAY",
         "side": "buy",
-        "price": "0.05000000",
-        "quantity": "100.00000",
+        "price": "5000000",
+        "quantity": "100000000",
         "counterparty_nft_id": 99
       }
     ]
@@ -106,21 +106,19 @@ Sent after matching completes. Shows your fills for this batch.
 
 ### settlement
 
-Sent when a matched trade settles on-chain.
+Sent when a matched trade settles on-chain. `price` is the on-chain clearing price and `quantity` is the base-token amount, both in raw canonical units (price x 1e8, quantity x 1e5).
 
 ```json
 {
   "event": "settlement",
   "data": {
     "batch_id": 500,
-    "trade_id": "0xabcd...",
+    "match_hash": "0xabcd...",
     "status": "confirmed",
     "pair": "EMM/KAY",
     "side": "buy",
-    "clearing_price": "0.05000000",
-    "base_amount": "100.00000",
-    "quote_amount": "5.00000",
-    "tx_hash": "0xtx..."
+    "price": "5000000",
+    "quantity": "100000000"
   }
 }
 ```
@@ -151,8 +149,8 @@ Respond to `batch_start` with orders:
 {
   "action": "commit",
   "orders": [
-    {"pair": "EMM/KAY", "side": "buy", "price": "0.04990000", "quantity": "100.00000"},
-    {"pair": "KAY/TEE", "side": "sell", "price": "0.05100000", "quantity": "50.00000"}
+    {"pair": "EMM/KAY", "side": "buy", "price": "0.04990000", "quantity": "1000.00000"},
+    {"pair": "KAY/TEE", "side": "sell", "price": "0.05100000", "quantity": "1000.00000"}
   ]
 }
 ```
