@@ -87,6 +87,12 @@ export default defineConfig({
         ]
       },
       {
+        text: 'Blog',
+        items: [
+          { text: 'How Would an AI Trade DeadMKT?', link: '/blog/deadmkt-trading-philosophy' },
+        ]
+      },
+      {
         text: 'Community',
         items: [
           { text: 'Contributing', link: '/community/contributing' },
